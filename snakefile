@@ -8,7 +8,7 @@ TYPE = ["bb", "ins"]
 rule all:
     input:
 #        expand("output/02_split/{sample}_clean.done",sample=SAMPLES),
-        expand("output/02_split/ins/{sample}.fastq", sample=SAMPLES)
+        expand("output/02_split/ins/{sample}.fasta", sample=SAMPLES)
 #        dynamic("data/output/04_consensus/{type}/{sample}/{readname}/consensus/consensus.fasta" )
 
 
@@ -75,17 +75,29 @@ rule bowtie_map_backbone_to_read:
 #        touch("output/02_split/{sample}_clean.done")
 #    shell:
 #        "rm -rf output/01_bowtie/{sample}/"
-        
+
 rule split_by_backbone:
     input:
         sam = "output/01_bowtie/{sample}.sam",
         fastq = "data/samples/{sample}.fastq"
     output:
-        "output/02_split/bb/{sample}.fastq",
-        "output/02_split/ins/{sample}.fastq",
-#        touch("output/02_split/{sample}_split.done")
+        "output/02_split/bb/{sample}.fasta",
+        "output/02_split/ins/{sample}.fasta"
     shell:
-        "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam.py {input.sam} {input.fastq} {output}"
+        "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam2.py {input.sam} {input.fastq} {output}"
+       
+#rule split_by_backbone:
+#    input:
+#        sam = "output/01_bowtie/{sample}.sam",
+#        fastq = "data/samples/{sample}.fastq"
+#    output:
+#        bb ="output/02_split/bb/{sample}.fastq",
+#        ins = "output/02_split/ins/{sample}.fastq",
+#        stats = "output/02_split/stats/{sample}.csv",
+#        stats_subread = "output/02_split/stats/{sample}_subreads.csv"
+#        touch("output/02_split/{sample}_split.done")
+#    shell:
+#        "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam.py --sam {input.sam} --fasta {input.fastq} --bb {output.bb} --ins {output.ins} --stats {output.stats} --st_sub {output.stats_subread}"
 #rule create_read_repeats:
 #    input: "data/output/02_split/{type}/{sample}.fastq" # run_name = {sample}_bb or {sample}_ins
 #    output: directory("data/output/03_read_repeats/{type}/{sample}")
