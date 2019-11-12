@@ -7,8 +7,10 @@ TYPE = ["bb", "ins"]
 # end point
 rule all:
     input:
+#        expand("output/02_split/{sample}_clean.done",sample=SAMPLES),
         expand("output/02_split/ins/{sample}.fastq", sample=SAMPLES)
 #        dynamic("data/output/04_consensus/{type}/{sample}/{readname}/consensus/consensus.fasta" )
+
 
 rule bedtool_getfasta:
     input:
@@ -25,6 +27,7 @@ rule fastq_get_fasta:
     input:
         fastq = "data/samples/{sample}.fastq"
     output:
+        touch("output/01_bowtie/{sample}/createfolder.done"),
         fasta = "data/samples/{sample}.fasta"
     shell:
         "sed -n '1~4s/^@/>/p;2~4p' {input.fastq} > {output.fasta}"
@@ -34,11 +37,11 @@ rule bowtie_build:
     input:
         fasta = expand("data/samples/{sample}.fasta", sample=SAMPLES)
     params:
-        re_path="output/01_bowtie/reference"
+        re_path="output/01_bowtie/{sample}/reference"
     log:
         "log/bt-build/{sample}.log"
     output:
-        touch('log/bowtie_build_{sample}.done')
+        touch('output/01_bowtie/{sample}/bowtie_build_{sample}.done')
     shell:
         "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2-build -f {input.fasta} {params.re_path} > {log}"
 
@@ -54,24 +57,33 @@ rule bowtie_map_backbone_to_read:
     # http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer
     input:
         split_by = "data/seg/bb4.fa",
-        done = "log/bowtie_build_{sample}.done"
+        done = "output/01_bowtie/{sample}/bowtie_build_{sample}.done"
     params:
         # -x expect to find index files at current folder, then in the
         # directory specified in the BOWTIE2_INDEXES environment variable.
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
-        basename = "output/01_bowtie/reference"
+        basename = "output/01_bowtie/{sample}/reference"
     output:
         sam = "output/01_bowtie/{sample}.sam"
     shell: "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p 4 -f -x {params.basename} -U {input.split_by} -S {output.sam}"
 
+#rule clean_bowtie_ref:
+#    input:
+#        done = "output/02_split/{sample}_split.done",
+#    output:
+#        touch("output/02_split/{sample}_clean.done")
+#    shell:
+#        "rm -rf output/01_bowtie/{sample}/"
+        
 rule split_by_backbone:
     input:
         sam = "output/01_bowtie/{sample}.sam",
         fastq = "data/samples/{sample}.fastq"
     output:
         "output/02_split/bb/{sample}.fastq",
-        "output/02_split/ins/{sample}.fastq"
+        "output/02_split/ins/{sample}.fastq",
+        touch("output/02_split/{sample}_split.done")
     shell:
         "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam.py {input.sam} {input.fastq} {output}"
 #rule create_read_repeats:
