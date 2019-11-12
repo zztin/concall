@@ -83,7 +83,7 @@ rule split_by_backbone:
     output:
         "output/02_split/bb/{sample}.fastq",
         "output/02_split/ins/{sample}.fastq",
-        touch("output/02_split/{sample}_split.done")
+#        touch("output/02_split/{sample}_split.done")
     shell:
         "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam.py {input.sam} {input.fastq} {output}"
 #rule create_read_repeats:
