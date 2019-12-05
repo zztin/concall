@@ -1,18 +1,24 @@
 configfile: "./config.yaml"
 SAMPLES = ["40reads_119r10"]
-SEG = ["bb4", "targets"] 
-TYPE = ["bb", "ins"]
+#, "FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
+# IN_PATH = /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/
+IN_PATH = os.path.expanduser(config["IN_PATH"])
+SUP_SAMPLES = ["CY_SS_PC_HC_0001_001_000_GU_303_HAC_20191031"]
+#SEG = ["bb4", "targets"] 
+#TYPE = ["bb", "ins"]
 # snakemake define the first rule of the Snakefile as the target.
 # Therefore, it is best practice to have a rule "all" on top of the workflow which define the target files as input files.
 # end point
 rule all:
     input:
 #        expand("output/02_split/{sample}_clean.done",sample=SAMPLES),
-        expand("output/02_split/ins/{sample}.fasta", sample=SAMPLES)
-#        dynamic("data/output/04_consensus/{type}/{sample}/{readname}/consensus/consensus.fasta" )
+#        expand("output/03_consensus/ins/{sample}/consensus.fasta", sample=SAMPLES)
+        expand("output/04_done/{sample}_bb.done", sample=SAMPLES),
+#        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 
 
 rule bedtool_getfasta:
+    group: "bowtie_split"
     input:
         seg = "data/seg/{seg}.bed",
         ref = "/hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta"
@@ -24,6 +30,7 @@ rule bedtool_getfasta:
         "bedtools getfasta -fi /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta -bed {input.seg} -fo {output}"
 
 rule fastq_get_fasta:
+    group: "bowtie_split"
     input:
         fastq = "data/samples/{sample}.fastq"
     output:
@@ -34,12 +41,13 @@ rule fastq_get_fasta:
 
 rule bowtie_build:
     # How to write output? answer here: https://www.biostars.org/p/342988/
+    group: "bowtie_split"
     input:
         fasta = expand("data/samples/{sample}.fasta", sample=SAMPLES)
     params:
         re_path="output/01_bowtie/{sample}/reference"
     log:
-        "log/bt-build/{sample}.log"
+        "log/bt-build_{sample}.log"
     output:
         touch('output/01_bowtie/{sample}/bowtie_build_{sample}.done')
     shell:
@@ -55,6 +63,7 @@ rule bowtie_map_backbone_to_read:
     ## -mp MX,MN (maximum and minimum mismatch penalties): modify alignment score considering Q(Phred score)
     ## -ma match bonus
     # http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer
+    group: "bowtie_split"
     input:
         split_by = "data/seg/bb4.fa",
         done = "output/01_bowtie/{sample}/bowtie_build_{sample}.done"
@@ -64,6 +73,8 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/01_bowtie/{sample}/reference"
+    log:
+        "log/bt-split_{sample}.log"
     output:
         sam = "output/01_bowtie/{sample}.sam"
     shell: "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p 4 -f -x {params.basename} -U {input.split_by} -S {output.sam}"
@@ -77,6 +88,7 @@ rule bowtie_map_backbone_to_read:
 #        "rm -rf output/01_bowtie/{sample}/"
 
 rule split_by_backbone:
+    group: "bowtie_split"
     input:
         sam = "output/01_bowtie/{sample}.sam",
         fastq = "data/samples/{sample}.fastq"
@@ -84,8 +96,39 @@ rule split_by_backbone:
         "output/02_split/bb/{sample}.fasta",
         "output/02_split/ins/{sample}.fasta"
     shell:
+        #"python scripts/sam2.py {input.sam} {input.fastq} {output}"
         "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam2.py {input.sam} {input.fastq} {output}"
-       
+
+rule medaka_smolecule_ins:
+    input:
+#        venv = ancient(IN_MEDAKA),
+        fasta = "output/02_split/ins/{sample}.fasta"
+    output:
+        path = directory("output/03_consensus/ins/{sample}/"),
+        done = touch("output/04_done/{sample}_ins.done")
+    log:
+        "log/smolecule_ins_{sample}.log"
+    threads: 4
+    conda:
+        "envs/smolecule-env.yaml"
+    shell:
+         "medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+         #set +u; source activate snake-mdk; set -u;
+         #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
+
+rule smolecule_bb:
+    input:
+        fasta = "output/02_split/bb/{sample}.fasta"
+    output:
+        path = directory("output/03_consensus/bb/{sample}/"),
+        done = touch("output/04_done/{sample}_bb.done")
+    log:
+        "log/smolecule_bb_{sample}.log"
+    threads: 4
+    conda:
+        "envs/smolecule-env.yaml"
+    shell:
+         "medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
 #rule split_by_backbone:
 #    input:
 #        sam = "output/01_bowtie/{sample}.sam",
@@ -119,9 +162,9 @@ rule split_by_backbone:
 
 
 
-#onsuccess:
-#    print("Workflow finished, no error")
+onsuccess:
+    print("Workflow finished, no error. Success!")
 
-#onerror:
-#    print("An error occurred")
-#    shell("mail -s 'an error occurred' litingchen16@gmail.com < {log}")
+onerror:
+    print("An notice sent to Liting by mail.")
+    shell("mail -s 'an error occurred' litingchen16@gmail.com < {log}")
