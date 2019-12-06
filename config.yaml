@@ -1,0 +1,15 @@
+
+# Software locations. CHange if needed.
+IN_MEDAKA: "/hpc/cog_bioinf/ridder/users/lchen/miniconda37_2/envs/snake-mdk/bin/activate"
+SOURCE: "source"
+raw_dir:
+    /hpc/cog_bioinf/ridder/nanopore/raw_data/RCA/CY_SM_PC_HC_0002_001_000/fastq_pass/
+#samples:
+#    b0: /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/data/Alessio119RCA_guppy_3.0.3_HAC_b0.fastq
+
+genome:
+    ch37: /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta
+
+ref:
+    bb: /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/data/backbone.fa
+    target: /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/data/backbone.fatargets.fa
