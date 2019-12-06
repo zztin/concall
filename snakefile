@@ -1,6 +1,6 @@
 configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
-#, "FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
+# SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/results/"
 #IN_PATH = os.path.expanduser(config["IN_PATH"])
@@ -15,7 +15,7 @@ ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 #SAMPLES, = glob_wildcards(config['raw_dir']+"{sample}.fastq.gz")
-#SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_151"]
+SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_151"]
 rule all:
     input:
 #        expand("output/00_fasta/{sample}.fasta", sample=SAMPLES)
