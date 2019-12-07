@@ -116,11 +116,12 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/01_bowtie/{sample}/reference"
+    threads: 4
     log:
         "log/bt-split_{sample}.log"
     output:
         sam = "output/01_bowtie/{sample}.sam"
-    shell: "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p 4 -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
+    shell: "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
 
 #rule clean_bowtie_ref:
 #    input:
