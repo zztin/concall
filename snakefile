@@ -16,6 +16,7 @@ ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 #SAMPLES, = glob_wildcards(config['raw_dir']+"{sample}.fastq.gz)
 SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_1"]
+#SAMPLES = ["40reads_119r10"]
 rule all:
     input:
 #        expand("output/00_fasta/{sample}.fasta", sample=SAMPLES)
@@ -91,7 +92,7 @@ rule bowtie_wrapper_map:
     params:
         index = "output/01_bowtie/{sample}/reference",
         extra=""
-    threads : 4
+    threads : 8
     wrapper:
         "0.42.0/bio/bowtie2/align"
         
@@ -116,7 +117,7 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/01_bowtie/{sample}/reference"
-    threads: 4
+    threads: 8
     log:
         "log/bt-split_{sample}.log"
     output:
