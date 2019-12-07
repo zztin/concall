@@ -14,8 +14,8 @@ configfile: "./config.yaml"
 ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
-#SAMPLES, = glob_wildcards(config['raw_dir']+"{sample}.fastq.gz")
-SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_151"]
+#SAMPLES, = glob_wildcards(config['raw_dir']+"{sample}.fastq.gz)
+SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_1"]
 rule all:
     input:
 #        expand("output/00_fasta/{sample}.fasta", sample=SAMPLES)
@@ -157,7 +157,7 @@ rule smolecule_ins:
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 10 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
          #set +u; source activate snake-mdk; set -u;
          #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
 
@@ -175,7 +175,7 @@ rule smolecule_bb:
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 10 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
 #rule split_by_backbone:
 #    input:
 #        sam = "output/01_bowtie/{sample}.sam",
