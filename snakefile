@@ -1,4 +1,4 @@
-configfile: "./config.yaml"
+configfile: "./config_DER4127.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
@@ -14,15 +14,21 @@ configfile: "./config.yaml"
 ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
-#SAMPLES, = glob_wildcards(config['raw_dir']+"{sample}.fastq.gz)
-SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_1"]
+SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
+#SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_16']
+print("SAMPLES:", SAMPLES)
+SUP_SAMPLES = config['SUP_SAMPLES']
+
+#SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_1"]
 #SAMPLES = ["40reads_119r10"]
 rule all:
     input:
 #        expand("output/00_fasta/{sample}.fasta", sample=SAMPLES)
 #d        expand("output/03_consensus/ins/{sample}/consensus.fasta", sample=SAMPLES)
-        expand("output/04_done/{sample}_bb.done", sample=SAMPLES),
-        expand("output/04_done/{sample}_ins.done", sample=SAMPLES)
+#        expand("output/04_done/{sample}_bb.done", sample=SAMPLES),
+#        expand("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 #rule print_name:
@@ -48,35 +54,36 @@ rule bedtool_getfasta:
 rule gz_fastq_get_fasta:
     group: "bowtie_split"
     input:
-        gz = config['raw_dir']+"{sample}.fastq.gz"
+        gz = config['rawdir']+"/{sample}.fastq.gz"
     output:
-        touch("output/01_bowtie/{sample}/createfolder.done"),
-        fastq = temp("output/00_fasta/{sample}.fastq"),
-        fasta = "output/00_fasta/{sample}.fasta"
+        touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
+        fastq = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"),
+        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     shell:
         "zcat {input.gz} > {output.fastq};\
          sed -n '1~4s/^@/>/p;2~4p' {output.fastq} > {output.fasta}"
 rule fastq_get_fasta:
     group: "bowtie_split"
     input:
-        fastq = "output/00_fasta/{sample}.fastq"
+        fastq = "output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"
     output:
-        touch("output/01_bowtie/{sample}/createfolder.done"),
-        fasta = "output/00_fasta/{sample}.fasta"
+        touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
+        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     shell:
         "sed -n '1~4s/^@/>/p;2~4p' {input.fastq} > {output.fasta}"
 
 rule bowtie_build:
+    # did not remove output while rule failed...
     # How to write output? answer here: https://www.biostars.org/p/342988/
     group: "bowtie_split"
     input:
-        fasta = expand("output/00_fasta/{sample}.fasta", sample=SAMPLES)
+        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     params:
-        re_path="output/01_bowtie/{sample}/reference"
+        re_path="output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
     log:
-        "log/bt-build_{sample}.log"
+        "log/{SUP_SAMPLE}/bt-build_{sample}.log"
     output:
-        touch('output/01_bowtie/{sample}/bowtie_build_{sample}.done')
+        touch('output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done')
     shell:
         "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2-build -f {input.fasta} {params.re_path} > {log} 2>&1"
 
@@ -84,15 +91,15 @@ rule bowtie_wrapper_map:
     group:"bowtie_split"
     input:
         split_by = "data/seg/bb4.fa",
-        done = "output/01_bowtie/{sample}/bowtie_build_{sample}.done"
+        done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
     output:
-        sam = "output/01_bowtie/{sample}.sam"
+        sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"
     log:
-        "log/bt-split_{sample}.log"    
+        "log/bt-split_{SUP_SAMPLE}_{sample}.log"    
     params:
-        index = "output/01_bowtie/{sample}/reference",
-        extra=""
-    threads : 8
+        index = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference",
+        extra="--local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -f"
+    threads : 4
     wrapper:
         "0.42.0/bio/bowtie2/align"
         
@@ -110,18 +117,20 @@ rule bowtie_map_backbone_to_read:
     group: "bowtie_split"
     input:
         split_by = "data/seg/bb4.fa",
-        done = "output/01_bowtie/{sample}/bowtie_build_{sample}.done"
+        done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
     params:
         # -x expect to find index files at current folder, then in the
         # directory specified in the BOWTIE2_INDEXES environment variable.
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
-        basename = "output/01_bowtie/{sample}/reference"
-    threads: 8
+        basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
+    threads: 4
+    benchmark:
+        "log/benchmark/{SUP_SAMPLE}_{sample}_map_backbone_to_read_time.txt"
     log:
-        "log/bt-split_{sample}.log"
+        "log/{SUP_SAMPLE}/bt-split_{sample}.log"
     output:
-        sam = "output/01_bowtie/{sample}.sam"
+        sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"
     shell: "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
 
 #rule clean_bowtie_ref:
@@ -135,48 +144,70 @@ rule bowtie_map_backbone_to_read:
 rule split_by_backbone:
     group: "bowtie_split"
     input:
-        sam = "output/01_bowtie/{sample}.sam",
-        fasta = "output/00_fasta/{sample}.fasta"
+        sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam",
+        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    benchmark:
+        "log/benchmark/{SUP_SAMPLE}_{sample}.sam2_split_time.txt"
     output:
-        bb = "output/02_split/bb/{sample}.fasta",
-        ins = "output/02_split/ins/{sample}.fasta",
-        stats = "output/02_split/stats/{sample}.csv"
+        bb = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta",
+        ins = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta",
+        stats = "output/{SUP_SAMPLE}/02_split/stats/{sample}.csv"
     shell:
         #"python scripts/sam2.py {input.sam} {input.fastq} {output}"
         "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
 
 rule smolecule_ins:
+    group: "bowtie_split"
     input:
 #        venv = ancient(IN_MEDAKA),
-        fasta = "output/02_split/ins/{sample}.fasta"
+        fasta = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta"
     output:
-        path = directory("output/03_consensus/ins/{sample}/"),
-        done = touch("output/04_done/{sample}_ins.done")
+        path = directory("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/"),
+        done = "output/{SUP_SAMPLE}/04_done/{sample}_ins.done"
     log:
-        "log/smol_ins_{sample}.log"
+        "log/{SUP_SAMPLE}/smol_ins_{sample}.log"
     threads: 4
+    benchmark:
+        "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 10 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1; touch done"
          #set +u; source activate snake-mdk; set -u;
          #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
 
 rule smolecule_bb:
     input:
-        fasta = "output/02_split/bb/{sample}.fasta"
+        fasta = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta"
     output:
-        path = directory("output/03_consensus/bb/{sample}/"),
-        done = touch("output/04_done/{sample}_bb.done")
+        path = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/"),
+        done = touch("output/{SUP_SAMPLE}/04_done/{sample}_bb.done")
     log:
-        "log/smol_bb_{sample}.log"
+        "log/{SUP_SAMPLE}/smol_bb_{sample}.log"
     threads: 4
     benchmark:
-        "log/benchmark/{sample}.smolecule_time.txt"
+        "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 10 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+
+# how to make sure all samples are done?
+#ALL_BB = glob_wildcards(output/03_consensus/bb/{sample}/consensus.fasta")
+
+#rule map_consensus:
+#    input:
+#
+#    output:
+#
+#    log:
+#    threads:
+#    benchmark:
+#    conda:
+#    shell:
+
+
+
 #rule split_by_backbone:
 #    input:
 #        sam = "output/01_bowtie/{sample}.sam",
@@ -218,7 +249,7 @@ rule smolecule_bb:
 
 onsuccess:
     print("Workflow finished, no error. Success!")
-
+    shell("mail -s 'Workflow finished, no error!' litingchen16@gmail.com < {log}")
 onerror:
     print("An notice sent to Liting by mail.")
     shell("mail -s 'an error occurred' litingchen16@gmail.com < {log}")
