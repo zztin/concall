@@ -104,4 +104,4 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
     except StopIteration:
         pass
 
-print('Splitting data finished.')
+#print('Splitting data finished.')

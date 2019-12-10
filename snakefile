@@ -1,4 +1,4 @@
-configfile: "./config_DER4127.yaml"
+configfile: "./config_DER4127_f.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
@@ -15,8 +15,8 @@ ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
-#SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_16']
-print("SAMPLES:", SAMPLES)
+#SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_19']
+#print("SAMPLES:", SAMPLES)
 SUP_SAMPLES = config['SUP_SAMPLES']
 
 #SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_1"]
@@ -157,26 +157,27 @@ rule split_by_backbone:
         "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
 
 rule smolecule_ins:
-    group: "bowtie_split"
+    group: "smolecule"
     input:
 #        venv = ancient(IN_MEDAKA),
         fasta = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta"
     output:
         path = directory("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/"),
-        done = "output/{SUP_SAMPLE}/04_done/{sample}_ins.done"
+        done = touch("output/{SUP_SAMPLE}/04_done/{sample}_ins.done")
     log:
         "log/{SUP_SAMPLE}/smol_ins_{sample}.log"
-    threads: 4
+    threads: 2
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1; touch done"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
          #set +u; source activate snake-mdk; set -u;
          #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
 
 rule smolecule_bb:
+    group: "smolecule"
     input:
         fasta = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta"
     output:
@@ -184,7 +185,7 @@ rule smolecule_bb:
         done = touch("output/{SUP_SAMPLE}/04_done/{sample}_bb.done")
     log:
         "log/{SUP_SAMPLE}/smol_bb_{sample}.log"
-    threads: 4
+    threads: 2
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
     conda:
@@ -193,7 +194,7 @@ rule smolecule_bb:
          "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
 
 # how to make sure all samples are done?
-#ALL_BB = glob_wildcards(output/03_consensus/bb/{sample}/consensus.fasta")
+#ALL_BB, = glob_wildcards(output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta")
 
 #rule map_consensus:
 #    input:
