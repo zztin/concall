@@ -1,4 +1,4 @@
-configfile: "./config_DER4127_f.yaml"
+configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
@@ -12,8 +12,9 @@ configfile: "./config_DER4127_f.yaml"
 # Therefore, it is best practice to have a rule "all" on top of the workflow which define the target files as input files.
 # end point
 ruleorder: gz_fastq_get_fasta > fastq_get_fasta
+#ruleorder: aggregation > aggregate_csv
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
-ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
+#ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
 #SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_19']
 #print("SAMPLES:", SAMPLES)
@@ -21,13 +22,22 @@ SUP_SAMPLES = config['SUP_SAMPLES']
 
 #SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_1"]
 #SAMPLES = ["40reads_119r10"]
+
+
 rule all:
     input:
+        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/05_aggregated/bb_consensus.fasta",SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/05_aggregated/ins_consensus.fasta",SUP_SAMPLE=SUP_SAMPLES),
+
+#rule all:
+#    input:
 #        expand("output/00_fasta/{sample}.fasta", sample=SAMPLES)
 #d        expand("output/03_consensus/ins/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/04_done/{sample}_bb.done", sample=SAMPLES),
 #        expand("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+##############HERE#############
+#        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
@@ -77,7 +87,8 @@ rule bowtie_build:
     # How to write output? answer here: https://www.biostars.org/p/342988/
     group: "bowtie_split"
     input:
-        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta",
+        done =  "output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"
     params:
         re_path="output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
     log:
@@ -87,21 +98,21 @@ rule bowtie_build:
     shell:
         "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2-build -f {input.fasta} {params.re_path} > {log} 2>&1"
 
-rule bowtie_wrapper_map:
-    group:"bowtie_split"
-    input:
-        split_by = "data/seg/bb4.fa",
-        done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
-    output:
-        sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"
-    log:
-        "log/bt-split_{SUP_SAMPLE}_{sample}.log"    
-    params:
-        index = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference",
-        extra="--local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -f"
-    threads : 4
-    wrapper:
-        "0.42.0/bio/bowtie2/align"
+#rule bowtie_wrapper_map:
+#    group:"bowtie_split"
+#    input:
+#        split_by = "data/seg/bb4.fa",
+#        done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
+#    output:
+#        sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"
+#    log:
+#        "log/bt-split_{SUP_SAMPLE}_{sample}.log"    
+#    params:
+#        index = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference",
+#        extra="--local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -f"
+#    threads : 4
+#    wrapper:
+#        "0.42.0/bio/bowtie2/align"
         
     
 rule bowtie_map_backbone_to_read:
@@ -161,18 +172,21 @@ rule smolecule_ins:
     input:
 #        venv = ancient(IN_MEDAKA),
         fasta = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta"
-    output:
+    params:
         path = directory("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/"),
-        done = touch("output/{SUP_SAMPLE}/04_done/{sample}_ins.done")
+    output:
+        consensus = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
+        done = touch("output/{SUP_SAMPLE}/04_done/{sample}_ins.done"),
+#        consensus = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta"
     log:
         "log/{SUP_SAMPLE}/smol_ins_{sample}.log"
-    threads: 2
+    threads: 4
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {params.path} > {log} 2>&1"
          #set +u; source activate snake-mdk; set -u;
          #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
 
@@ -181,21 +195,88 @@ rule smolecule_bb:
     input:
         fasta = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta"
     output:
-        path = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/"),
-        done = touch("output/{SUP_SAMPLE}/04_done/{sample}_bb.done")
+        done = touch("output/{SUP_SAMPLE}/04_done/{sample}_bb.done"),
+        consensus = "output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta"
+    params:
+        path = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/")
     log:
         "log/{SUP_SAMPLE}/smol_bb_{sample}.log"
-    threads: 2
+    threads: 4
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {params.path} > {log} 2>&1"
 
 # how to make sure all samples are done?
 #ALL_BB, = glob_wildcards(output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta")
 
+
+#checkpoint clustering:
+#    input:
+#        expand("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta", SUP_SAMPLE=SUP_SAMPLES,  sample = SAMPLES)
+#    output:
+#        clusters=directory("output/{SUP_SAMPLE}/05_aggregated")
+#    shell:
+#        "mkdir {output}"
+
+#rule intermediate:
+#    # everything post processing goes in here.
+#    input:
+#        "output/aggregated/{SUP_SAMPLE}/{sample}.csv"
+#    output:
+#        "output/post_processing/{SUP_SAMPLE}/{sample}.csv"
+#    shell:
+#        "cp {input} {output}"
+
+#def aggregate_input(wildcards):
+#    checkpoint_output = checkpoints.clustering.get(**wildcards).output[0]
+#    return expand("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta",
+#           SUP_SAMPLE=SUP_SAMPLES,
+#           sample=SAMPLES)
+#           sample=glob_wildcards(os.path.join(checkpoint_output, "{sample}/consensus.fasta")).sample)
+
+#rule aggregate_csv:
+#    input:
+#        aggregate_input
+#    output:
+#        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv"
+#    shell:
+#        "cat {input} > {output.csv}"
+
+TYPES = ["bb","ins"]
+
+rule aggregation:
+    input:
+        csv = expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+#        bb_fasta = aggregate_input
+        bb_fasta = expand("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta",
+           SUP_SAMPLE=SUP_SAMPLES,
+           sample=SAMPLES),
+        ins_fasta = expand("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
+           SUP_SAMPLE=SUP_SAMPLES,
+           sample=SAMPLES)
+    output:
+        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
+        bb = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_bb.fasta",
+        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
+    shell:
+        "cat {input.csv} > {output.csv}; cat {input.bb_fasta} > {output.bb}; cat {input.ins_fasta} > {output.ins}"
+
+rule count_repeat:
+    input:
+        csv = "output/{SUP_SAMPLE}/05_aggregated/bb/stats.csv",
+    output:
+        folder = directory("output/{SUP_SAMPLE}/05_aggregated/{type}/01_txt") 
+    params:
+        type = expand(type, type = TYPES)
+    script:
+        "scripts/fastq_splitby_consensus.py {output.folder} {input.csv} {params.type}"
+
+rule split_fasta:
+    
+        
 #rule map_consensus:
 #    input:
 #
