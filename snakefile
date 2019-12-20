@@ -1,4 +1,4 @@
-configfile: "./config_test.yaml"
+configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
@@ -16,7 +16,7 @@ ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 #ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 SUP_SAMPLES = config['SUP_SAMPLES']
-SAMPLES, = glob_wildcards(config['rawdir']+"/"+SUP_SAMPLES+"/{sample}.fastq.gz")
+SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
 #SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_19']
 #print("SAMPLES:", SAMPLES)
 
@@ -63,7 +63,7 @@ rule gz_fastq_get_fasta:
     group: "bowtie_split"
     input:
 #        gz = config['rawdir']+"/{sample}.fastq.gz"
-        gz = config['rawdir']+"/"+SUP_SAMPLES+"/{sample}.fastq.gz"
+        gz = config['rawdir']+"/{sample}.fastq.gz"
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fastq = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"),
