@@ -11,6 +11,7 @@
 
 	conda create -n snake-mdk -c conda-forge -c bioconda pip snakemake 
 **Installation with pip**
+
 	pip install snakemake
 
 # Usage
