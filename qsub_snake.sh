@@ -1,0 +1,1 @@
+snakemake --jobs 100 --latency-wait 60 --use-conda --cluster "qsub -l h_rt=02:00:00 -l h_vmem=30G  -l tmpspace=100G -o /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/log/$(date "+%Y.%m.%d-%H.%M.%S")snake_stdout.txt -e /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/log/$(date "+%Y.%m.%d-%H.%M.%S")snake_stderr.txt -pe threaded {threads}"
