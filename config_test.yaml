@@ -1,0 +1,14 @@
+
+# Software locations. CHange if needed.
+rawdir:
+    /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/data/samples
+#    /hpc/cog_bioinf/ridder/nanopore/raw_data/RCA/DER4127/fastq_pass
+SUP_SAMPLES:
+    CY_SUP_SAMPLE_TEST 
+
+#genome:
+#    ch37: /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta
+
+#ref:
+#    bb: /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/data/backbone.fa
+#    target: /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/data/targets.fa
