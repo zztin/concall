@@ -21,6 +21,7 @@ cd concall (project folder where snakefile located)
 `snakemake`
 
 **run on cluster: qsub**
+(This is also recorded in qsub_snake.sh in the repo)
 
 `snakemake --jobs 100 --latency-wait 600 --use-conda --cluster "qsub -l h_rt=02:00:00 -l h_vmem=30G  -l tmpspace=100G -o /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/log/$(date "+%Y.%m.%d-%H.%M.%S")snake_stdout.txt -e /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/log/$(date "+%Y.%m.%d-%H.%M.%S")snake_stderr.txt -pe threaded {threads}"`
 
