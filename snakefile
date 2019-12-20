@@ -1,4 +1,4 @@
-configfile: "./config.yaml"
+configfile: "./config_test.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
@@ -15,29 +15,27 @@ ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 #ruleorder: aggregation > aggregate_csv
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 #ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
-SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
+SUP_SAMPLES = config['SUP_SAMPLES']
+SAMPLES, = glob_wildcards(config['rawdir']+"/"+SUP_SAMPLES+"/{sample}.fastq.gz")
 #SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_19']
 #print("SAMPLES:", SAMPLES)
-SUP_SAMPLES = config['SUP_SAMPLES']
 
 #SAMPLES = ["FAK58127_e3b7026e6c44a11096370b0cfd31042b469e95fc_1"]
 #SAMPLES = ["40reads_119r10"]
 
 
-rule all:
-    input:
-        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/05_aggregated/bb_consensus.fasta",SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/05_aggregated/ins_consensus.fasta",SUP_SAMPLE=SUP_SAMPLES),
-
 #rule all:
 #    input:
-#        expand("output/00_fasta/{sample}.fasta", sample=SAMPLES)
-#d        expand("output/03_consensus/ins/{sample}/consensus.fasta", sample=SAMPLES)
-#        expand("output/04_done/{sample}_bb.done", sample=SAMPLES),
+#        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES),
+#        expand("output/{SUP_SAMPLE}/05_aggregated/bb_consensus.fasta",SUP_SAMPLE=SUP_SAMPLES),
+#        expand("output/{SUP_SAMPLE}/05_aggregated/ins_consensus.fasta",SUP_SAMPLE=SUP_SAMPLES),
+
+rule all:
+    input:
+        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
 #        expand("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 ##############HERE#############
-#        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
@@ -64,7 +62,8 @@ rule bedtool_getfasta:
 rule gz_fastq_get_fasta:
     group: "bowtie_split"
     input:
-        gz = config['rawdir']+"/{sample}.fastq.gz"
+#        gz = config['rawdir']+"/{sample}.fastq.gz"
+        gz = config['rawdir']+"/"+SUP_SAMPLES+"/{sample}.fastq.gz"
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fastq = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"),
@@ -259,22 +258,22 @@ rule aggregation:
            sample=SAMPLES)
     output:
         csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
-        bb = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_bb.fasta",
-        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
+        bb = "output/{SUP_SAMPLE}/05_aggregated/bb_consensus.fasta",
+        ins = "output/{SUP_SAMPLE}/05_aggregated/ins_consensus.fasta"
     shell:
         "cat {input.csv} > {output.csv}; cat {input.bb_fasta} > {output.bb}; cat {input.ins_fasta} > {output.ins}"
 
-rule count_repeat:
-    input:
-        csv = "output/{SUP_SAMPLE}/05_aggregated/bb/stats.csv",
-    output:
-        folder = directory("output/{SUP_SAMPLE}/05_aggregated/{type}/01_txt") 
-    params:
-        type = expand(type, type = TYPES)
-    script:
-        "scripts/fastq_splitby_consensus.py {output.folder} {input.csv} {params.type}"
+#rule count_repeat:
+#    input:
+#        csv = "output/{SUP_SAMPLE}/05_aggregated/bb/stats.csv",
+#    output:
+#        folder = directory("output/{SUP_SAMPLE}/05_aggregated/{type}/01_txt") 
+#    params:
+#        type = expand(type, type = TYPES)
+#    script:
+#        "scripts/fastq_splitby_consensus.py {output.folder} {input.csv} {params.type}"
 
-rule split_fasta:
+#rule split_fasta:
     
         
 #rule map_consensus:
