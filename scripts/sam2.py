@@ -14,11 +14,17 @@ stats_outFile = sys.argv[5]
 myDict = collections.defaultdict(list)
 for read in samFile:
     # Remove matches that suck
-    alnErr = sum(x[1] for x in read.cigartuples if x[0] in [1,2])
-    if alnErr/float(read.reference_end) < 0.2:
+    try:
+        alnErr = sum(x[1] for x in read.cigartuples if x[0] in [1,2])
+        if alnErr/float(read.reference_end) < 0.2:
         #read.reference_start + read.infer_query_length(always=True)
-        myDict[read.reference_name].append((read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name))
-
+            myDict[read.reference_name].append((read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name))
+    except TypeError as e:
+        # if there is no matching reads in sam file
+        touch(ins_outFile)
+        touch(bb_outFile)
+        touch(stats_outFile)
+        exit() 
 # Combine matches per read
 sortedKeys =list( myDict.keys())
 sortedKeys.sort()
