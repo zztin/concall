@@ -330,7 +330,7 @@ rule aggregation:
 
 onsuccess:
     print("Workflow finished, no error. Success!")
-    shell("mail -s 'Workflow finished, no error!' litingchen16@gmail.com < {log}")
+#    shell("mail -s 'Workflow finished, no error!' litingchen16@gmail.com < {log}")
 onerror:
     print("An notice sent to Liting by mail.")
-    shell("mail -s 'an error occurred' litingchen16@gmail.com < {log}")
+ #   shell("mail -s 'an error occurred' litingchen16@gmail.com < {log}")
