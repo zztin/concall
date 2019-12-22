@@ -1,5 +1,5 @@
 
-# Software locations. CHange if needed.
+# Data locations. Change [your path] to where you put the project folder concall/.
 rawdir:
     [your path]/concall/data/samples/CY_SUP_SAMPLE_TEST
 SUP_SAMPLES:
