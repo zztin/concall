@@ -164,7 +164,7 @@ rule split_by_backbone:
         stats = "output/{SUP_SAMPLE}/02_split/stats/{sample}.csv"
     shell:
         #"python scripts/sam2.py {input.sam} {input.fastq} {output}"
-        "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
+        "python scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
 
 rule smolecule_ins:
     group: "smolecule"

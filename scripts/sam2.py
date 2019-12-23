@@ -42,8 +42,8 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
     try:
         while True:
             # python3 = fqFile.readline().rstrip() # need testing. 
-            readName=fasta_file.next().rstrip()
-            readSeq=fasta_file.next().rstrip()
+            readName=next(fasta_file).rstrip()
+            readSeq=next(fasta_file).rstrip()
 #            readPlus=fqFile.next().rstrip()
 #            readPhred=fqFile.next().rstrip()
             readId=readName[1:].split()[0]
