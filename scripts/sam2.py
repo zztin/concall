@@ -1,5 +1,4 @@
 import sys
-sys.path.append("/hpc/local/CentOS7/cog/lib/python2.7/site-packages/")
 import pysam
 import collections
 import numpy as np
