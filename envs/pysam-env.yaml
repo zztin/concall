@@ -1,0 +1,27 @@
+name: pysam-minimum
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1
+  - ca-certificates=2019.11.28
+  - certifi=2019.11.28
+  - libffi=3.2.1
+  - libgcc-ng=9.2.0
+  - libstdcxx-ng=9.2.0
+  - ncurses=6.1
+  - openssl=1.1.1d
+  - pip=19.3.1
+  - python=3.6.7
+  - readline=8.0
+  - setuptools=44.0.0
+  - sqlite=3.30.1
+  - tk=8.6.10
+  - wheel=0.33.6
+  - xz=5.2.4
+  - zlib=1.2.11
+  - pip:
+    - numpy==1.18.0
+    - pysam==0.15.3
+

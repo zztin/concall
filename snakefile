@@ -37,7 +37,7 @@ rule all:
     input:
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-        expand("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 #rule print_name:
@@ -63,7 +63,6 @@ rule bedtool_getfasta:
 rule gz_fastq_get_fasta:
     group: "bowtie_split"
     input:
-#        gz = config['rawdir']+"/{sample}.fastq.gz"
         gz = config['rawdir']+"/{sample}.fastq.gz"
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
@@ -163,9 +162,13 @@ rule split_by_backbone:
         bb = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta",
         ins = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta",
         stats = "output/{SUP_SAMPLE}/02_split/stats/{sample}.csv"
+    log:
+        "log/{SUP_SAMPLE}/sam2_split_{sample}.log"
+    conda:
+        "envs/pysam-env.yaml"
     shell:
         #"python scripts/sam2.py {input.sam} {input.fastq} {output}"
-        "python scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
+        "python3 scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
 
 rule smolecule_ins:
     group: "smolecule"
