@@ -35,9 +35,9 @@ print("SAMPLES", SAMPLES)
 
 rule all:
     input:
-#        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-#        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-        expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+#        expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 #rule print_name:
@@ -158,7 +158,7 @@ rule split_by_backbone:
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     benchmark:
 # specify wildcard!!!
-        "log/benchmark/{SUP_SAMPLE}connectwith{sample}.sam2_split_time.txt"
+        "log/benchmark/{SUP_SAMPLE}xxx{sample}.sam2_split_time.txt"
     output:
         bb = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta",
         ins = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta",
