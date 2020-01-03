@@ -157,7 +157,8 @@ rule split_by_backbone:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam",
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     benchmark:
-        "log/benchmark/{SUP_SAMPLE}_{sample}.sam2_split_time.txt"
+# specify wildcard!!!
+        "log/benchmark/{SUP_SAMPLE}connectwith{sample}.sam2_split_time.txt"
     output:
         bb = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta",
         ins = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta",
