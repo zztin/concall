@@ -17,6 +17,9 @@ ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 #ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 SUP_SAMPLES = config['SUP_SAMPLES']
 SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
+
+print("SAMPLES", SAMPLES)
+
 #SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_19']
 #print("SAMPLES:", SAMPLES)
 
@@ -32,11 +35,9 @@ SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
 
 rule all:
     input:
-        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-#        expand("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-##############HERE#############
-        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-
+#        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+#        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        expand("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 #rule print_name:
