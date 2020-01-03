@@ -134,7 +134,7 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
-    threads: 4
+    threads: 1
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}_map_backbone_to_read_time.txt"
     log:
@@ -184,7 +184,7 @@ rule smolecule_ins:
 #        consensus = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta"
     log:
         "log/{SUP_SAMPLE}/smol_ins_{sample}.log"
-    threads: 4
+    threads: 1
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     conda:
@@ -205,7 +205,7 @@ rule smolecule_bb:
         path = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/")
     log:
         "log/{SUP_SAMPLE}/smol_bb_{sample}.log"
-    threads: 4
+    threads: 1
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
     conda:
