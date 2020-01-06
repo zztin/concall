@@ -50,7 +50,7 @@ rule all:
 
 
 rule bedtool_getfasta:
-    group: "bowtie_split"
+#    group: "bowtie_split"
     input:
         seg = "data/seg/{seg}.bed",
         ref = "/hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta"
@@ -61,7 +61,8 @@ rule bedtool_getfasta:
     shell:
         "bedtools getfasta -fi /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta -bed {input.seg} -fo {output}"
 rule gz_fastq_get_fasta:
-    group: "bowtie_split"
+    # this rule takes > 5 sec < 60 sec to generate output files while submitted to cluster.
+#    group: "bowtie_split"
     input:
         gz = config['rawdir']+"/{sample}.fastq.gz"
     output:
@@ -72,7 +73,7 @@ rule gz_fastq_get_fasta:
         "zcat {input.gz} > {output.fastq};\
          sed -n '1~4s/^@/>/p;2~4p' {output.fastq} > {output.fasta}"
 rule fastq_get_fasta:
-    group: "bowtie_split"
+#    group: "bowtie_split"
     input:
         fastq = "output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"
     output:
@@ -84,7 +85,7 @@ rule fastq_get_fasta:
 rule bowtie_build:
     # did not remove output while rule failed...
     # How to write output? answer here: https://www.biostars.org/p/342988/
-    group: "bowtie_split"
+#    group: "bowtie_split"
     input:
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta",
         done =  "output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"
@@ -124,7 +125,7 @@ rule bowtie_map_backbone_to_read:
     ## -mp MX,MN (maximum and minimum mismatch penalties): modify alignment score considering Q(Phred score)
     ## -ma match bonus
     # http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer
-    group: "bowtie_split"
+#    group: "bowtie_split"
     input:
         split_by = "data/seg/bb4.fa",
         done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
@@ -134,7 +135,7 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
-    threads: 1
+    threads: 8
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}_map_backbone_to_read_time.txt"
     log:
@@ -152,7 +153,7 @@ rule bowtie_map_backbone_to_read:
 #        "rm -rf output/01_bowtie/{sample}/"
 
 rule split_by_backbone:
-    group: "bowtie_split"
+#    group: "bowtie_split"
     input:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam",
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
@@ -172,7 +173,7 @@ rule split_by_backbone:
         "python3 scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
 
 rule smolecule_ins:
-    group: "smolecule"
+#    group: "smolecule"
     input:
 #        venv = ancient(IN_MEDAKA),
         fasta = "output/{SUP_SAMPLE}/02_split/ins/{sample}.fasta"
@@ -195,7 +196,7 @@ rule smolecule_ins:
          #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
 
 rule smolecule_bb:
-    group: "smolecule"
+#    group: "smolecule"
     input:
         fasta = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta"
     output:
