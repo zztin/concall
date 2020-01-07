@@ -7,4 +7,5 @@ SUP_SAMPLES:
 
 genome:
     ch37: /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta
-
+gz:
+    True
