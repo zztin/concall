@@ -3,12 +3,12 @@ import pysam
 import collections
 import numpy as np
 
-
 samFile = pysam.AlignmentFile(sys.argv[1], "rb")
 in_fasta_path = sys.argv[2]
 bb_outFile = sys.argv[3]
 ins_outFile = sys.argv[4]
 stats_outFile = sys.argv[5]
+min_gap,max_gap = sys.argv[6]
 # Create a dict with lists of SimpleRead using referenceName as key
 myDict = collections.defaultdict(list)
 for read in samFile:
@@ -33,8 +33,6 @@ for key in sortedKeys:
 
 # exit()
 
-min_gap = 50
-max_gap = 500
 # Work through the fastq file
 with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
         open(bb_outFile,'w') as dump_bb_File, open(stats_outFile,'w') as statFile:

@@ -1,4 +1,4 @@
-configfile: "./config.yaml"
+configfile: "./config_test2.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -41,8 +41,9 @@ print("SAMPLES", SAMPLES)
 
 rule all:
     input:
-        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
+#        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+#        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 #        expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
@@ -100,10 +101,11 @@ rule bowtie_build:
         re_path="output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
     log:
         "log/{SUP_SAMPLE}/bt-build_{sample}.log"
+    threads: 8
     output:
         touch('output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done')
     shell:
-        "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2-build -f {input.fasta} {params.re_path} > {log} 2>&1"
+        "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2-build --threads {threads} -f {input.fasta} {params.re_path} > {log} 2>&1"
 
 #rule bowtie_wrapper_map:
 #    group:"bowtie_split"
@@ -134,7 +136,7 @@ rule bowtie_map_backbone_to_read:
     # http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer
 #    group: "bowtie_split"
     input:
-        split_by = "data/seg/bb4.fa",
+        split_by = "data/seg/bb-C.fa",
         done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
     params:
         # -x expect to find index files at current folder, then in the
@@ -142,7 +144,7 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
-    threads: 4
+    threads: 8
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}_map_backbone_to_read_time.txt"
     log:
@@ -164,6 +166,8 @@ rule split_by_backbone:
     input:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam",
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    params:
+        insert_length = (50, 500)  # min, max
     benchmark:
 # specify wildcard!!!
         "log/benchmark/{SUP_SAMPLE}xxx{sample}.sam2_split_time.txt"
@@ -177,7 +181,7 @@ rule split_by_backbone:
         "envs/pysam-env.yaml"
     shell:
         #"python scripts/sam2.py {input.sam} {input.fastq} {output}"
-        "python3 scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats}"
+        "python3 scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats} {params.insert_length}"
 
 rule smolecule_ins:
 #    group: "smolecule"
@@ -300,27 +304,6 @@ rule aggregation:
 #    conda:
 #    shell:
 
-
-
-#rule split_by_backbone:
-#    input:
-#        sam = "output/01_bowtie/{sample}.sam",
-#        fastq = "data/samples/{sample}.fastq"
-#    output:
-#        bb ="output/02_split/bb/{sample}.fastq",
-#        ins = "output/02_split/ins/{sample}.fastq",
-#        stats = "output/02_split/stats/{sample}.csv",
-#        stats_subread = "output/02_split/stats/{sample}_subreads.csv"
-#        touch("output/02_split/{sample}_split.done")
-#    shell:
-#        "/hpc/local/CentOS7/common/lang/python/2.7.10/bin/python scripts/sam.py --sam {input.sam} --fasta {input.fastq} --bb {output.bb} --ins {output.ins} --stats {output.stats} --st_sub {output.stats_subread}"
-#rule create_read_repeats:
-#    input: "data/output/02_split/{type}/{sample}.fastq" # run_name = {sample}_bb or {sample}_ins
-#    output: directory("data/output/03_read_repeats/{type}/{sample}")
-#    shell:
-#        "sh ./scripts/split_fastq.sh {output} {input}"
-
-
 #rule medaka:
 #    input:
 #        read = dynamic("data/output/03_read_repeats/{type}/{sample}/{readname}.fastq"),
@@ -343,7 +326,7 @@ rule aggregation:
 
 onsuccess:
     print("Workflow finished, no error. Success!")
-#    shell("mail -s 'Workflow finished, no error!' litingchen16@gmail.com < {log}")
+    shell("mail -s 'Workflow finished, no error!' litingchen16@gmail.com < {log}")
 onerror:
     print("An notice sent to Liting by mail.")
  #   shell("mail -s 'an error occurred' litingchen16@gmail.com < {log}")
