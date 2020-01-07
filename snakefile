@@ -1,4 +1,5 @@
-configfile: "./config_test.yaml"
+configfile: "./config.yaml"
+#configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
@@ -11,12 +12,17 @@ configfile: "./config_test.yaml"
 # snakemake define the first rule of the Snakefile as the target.
 # Therefore, it is best practice to have a rule "all" on top of the workflow which define the target files as input files.
 # end point
-ruleorder: gz_fastq_get_fasta > fastq_get_fasta
+#ruleorder: gz_fastq_get_fasta > fastq_get_fasta
 #ruleorder: aggregation > aggregate_csv
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 #ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 SUP_SAMPLES = config['SUP_SAMPLES']
-SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
+# gz or not gz
+if config['gz'] == True:
+    SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
+else:
+    SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
+
 
 print("SAMPLES", SAMPLES)
 
@@ -48,6 +54,7 @@ rule all:
 #    shell:
 #        "echo {IN_PATH}/{SUP_SAMPLE}/{sample}/{sample}.fastq"
 
+localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bowtie_build
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
@@ -75,7 +82,7 @@ rule gz_fastq_get_fasta:
 rule fastq_get_fasta:
 #    group: "bowtie_split"
     input:
-        fastq = "output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"
+        fastq  = config['rawdir']+"/{sample}.fastq"
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
@@ -135,7 +142,7 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
-    threads: 8
+    threads: 4
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}_map_backbone_to_read_time.txt"
     log:
@@ -185,7 +192,7 @@ rule smolecule_ins:
 #        consensus = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta"
     log:
         "log/{SUP_SAMPLE}/smol_ins_{sample}.log"
-    threads: 1
+    threads: 4
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     conda:
@@ -206,7 +213,7 @@ rule smolecule_bb:
         path = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/")
     log:
         "log/{SUP_SAMPLE}/smol_bb_{sample}.log"
-    threads: 1
+    threads: 4
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
     conda:

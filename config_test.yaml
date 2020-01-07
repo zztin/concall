@@ -9,6 +9,5 @@ SUP_SAMPLES:
 genome:
     ch37: /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta
 
-#ref:
-#    bb: /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/data/backbone.fa
-#    target: /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/data/targets.fa
+gz:
+    True
