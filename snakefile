@@ -17,6 +17,8 @@ configfile: "./config_test2.yaml"
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 #ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
 SUP_SAMPLES = config['SUP_SAMPLES']
+TYPES = ["bb","ins"]
+
 # gz or not gz
 if config['gz'] == True:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
@@ -25,6 +27,7 @@ else:
 
 
 print("SAMPLES", SAMPLES)
+
 
 #SAMPLES = ['ABD169_9b86e52523af3f63ffea1043c200f43472e41222_19']
 #print("SAMPLES:", SAMPLES)
@@ -41,7 +44,9 @@ print("SAMPLES", SAMPLES)
 
 rule all:
     input:
-        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
+#        expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/consensus_{type}_{count_name}.sam", SUP_SAMPLE=SUP_SAMPLES , type = TYPES, count_name = range(1,40) )
+         expand("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done", SUP_SAMPLE=SUP_SAMPLES , type = TYPES)
+#        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 #        expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
@@ -105,7 +110,7 @@ rule bowtie_build:
     output:
         touch('output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done')
     shell:
-        "/hpc/cog_bioinf/ridder/users/aallahyar/My_Works/Useful_Sample_Codes/Bowtie2/bowtie2-2.2.6/bowtie2-build --threads {threads} -f {input.fasta} {params.re_path} > {log} 2>&1"
+        "bowtie2-build --threads {threads} -f {input.fasta} {params.re_path} > {log} 2>&1"
 
 #rule bowtie_wrapper_map:
 #    group:"bowtie_split"
@@ -167,7 +172,8 @@ rule split_by_backbone:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam",
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     params:
-        insert_length = (50, 500)  # min, max
+        min_insert_length = 50, 
+        max_insert_length = 500
     benchmark:
 # specify wildcard!!!
         "log/benchmark/{SUP_SAMPLE}xxx{sample}.sam2_split_time.txt"
@@ -181,7 +187,7 @@ rule split_by_backbone:
         "envs/pysam-env.yaml"
     shell:
         #"python scripts/sam2.py {input.sam} {input.fastq} {output}"
-        "python3 scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats} {params.insert_length}"
+        "python3 scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats} {params.min_insert_length} {params.max_insert_length}"
 
 rule smolecule_ins:
 #    group: "smolecule"
@@ -261,7 +267,6 @@ rule smolecule_bb:
 #    shell:
 #        "cat {input} > {output.csv}"
 
-TYPES = ["bb","ins"]
 
 rule aggregation:
     input:
@@ -275,23 +280,47 @@ rule aggregation:
            sample=SAMPLES)
     output:
         csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
-        bb = "output/{SUP_SAMPLE}/05_aggregated/bb_consensus.fasta",
-        ins = "output/{SUP_SAMPLE}/05_aggregated/ins_consensus.fasta"
+        bb = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_bb.fasta",
+        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
     shell:
         "cat {input.csv} > {output.csv}; cat {input.bb_fasta} > {output.bb}; cat {input.ins_fasta} > {output.ins}"
 
-#rule count_repeat:
-#    input:
-#        csv = "output/{SUP_SAMPLE}/05_aggregated/bb/stats.csv",
-#    output:
-#        folder = directory("output/{SUP_SAMPLE}/05_aggregated/{type}/01_txt") 
-#    params:
-#        type = expand(type, type = TYPES)
-#    script:
-#        "scripts/fastq_splitby_consensus.py {output.folder} {input.csv} {params.type}"
 
-#rule split_fasta:
-    
+rule count_repeat:
+    input:
+        csv = rules.aggregation.output.csv
+    output:
+        folder = directory("output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}"),
+        done = touch("output/{SUP_SAMPLE}/04_done/{type}_bin_name.done")
+    log:
+        "log/{SUP_SAMPLE}/{type}_count_repeat.log"
+    shell:
+        "python scripts/fastq_splitby_consensus.py {output.folder} {input.csv} > {log};"
+
+rule split_fasta:
+    input:
+         donefile = "output/{SUP_SAMPLE}/04_done/{type}_bin_name.done",
+         fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta"
+    output:
+        folder_02_split = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"),
+        done = touch("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done")
+    params:
+        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}"
+    shell:
+        "python scripts/split_fasta.py {output.folder_02_split} {params.txt} {input.fasta};"
+
+rule bwa_map:
+    input:
+        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type}/consensus_{type, \s+}_{count_name, \d+}.fasta"
+    output:
+        bwa = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam",
+        
+    params:
+        split_folder = "output/{SUP_SAMPLE}/05_aggregated/02_split_fasta_{type}",
+        ref_genome_fasta = config["ref_genome_final"] 
+    shell:
+        "bwa mem -t 2 -c 100 -M -R ’@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}\tPL:NANOPORE\tLB:{SUP_SAMPLE}’ {params.ref_genome_fasta} {input.fasta} > {output.sam} "
+ 
         
 #rule map_consensus:
 #    input:

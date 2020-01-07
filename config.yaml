@@ -15,7 +15,8 @@ SUP_SAMPLES:
 gz:
     True
 #CY_SM_PC_HC_0002_001_000
-   
+ref_genome_final:
+    /hpc/cog_bioinf/GENOMES/Cyclomics_reference_genome/version12/Homo_sapiens.GRCh37.GATK.illumina_cyclomics_backbone.fasta   
 
 #genome:
 #    ch37: /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta
