@@ -8,7 +8,8 @@ in_fasta_path = sys.argv[2]
 bb_outFile = sys.argv[3]
 ins_outFile = sys.argv[4]
 stats_outFile = sys.argv[5]
-min_gap,max_gap = sys.argv[6]
+min_gap = int(sys.argv[6])
+max_gap = int(sys.argv[7])
 # Create a dict with lists of SimpleRead using referenceName as key
 myDict = collections.defaultdict(list)
 for read in samFile:
