@@ -54,7 +54,7 @@ rule all:
 #    shell:
 #        "echo {IN_PATH}/{SUP_SAMPLE}/{sample}/{sample}.fastq"
 
-localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bowtie_build
+localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
