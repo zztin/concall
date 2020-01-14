@@ -20,6 +20,7 @@ dependencies:
   - blas=2.14=openblas
   - boto3=1.10.17=py_0
   - botocore=1.13.17=py_0
+  - bowtie2=2.3.5
   - bzip2=1.0.8=h516909a_1
   - c-ares=1.15.0=h516909a_1001
   - ca-certificates=2019.9.11=hecc5488_0
