@@ -1,4 +1,4 @@
-configfile: "./config_test2.yaml"
+configfile: "./config.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -34,7 +34,8 @@ rule all:
 #         expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type=TYPES)
 #        expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam", SUP_SAMPLE=SUP_SAMPLES , type = TYPES, count_name = range(1,41) )
 #        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
-        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
+        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+        expand("output/{SUP_SAMPLE}/05_aggregated/all-{type}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 #         expand("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done", SUP_SAMPLE=SUP_SAMPLES , type = TYPES)
 #        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
@@ -136,7 +137,7 @@ rule bowtie_map_backbone_to_read:
     # http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer
 #    group: "bowtie_split"
     input:
-        split_by = "data/seg/bb-C.fa",
+        split_by = config["BBTYPE"],
         done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
     params:
         # -x expect to find index files at current folder, then in the
@@ -282,6 +283,26 @@ rule aggregation:
     shell:
         "cat {input.csv} > {output.csv}; cat {input.bb_fasta} > {output.bb}; cat {input.ins_fasta} > {output.ins}"
 
+rule bwa_whole:
+    input:
+#        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
+        fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta",
+#        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
+    output:
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{type}.done"),
+        sam = "output/{SUP_SAMPLE}/05_aggregated/all-{type}.sam",
+        bam = "output/{SUP_SAMPLE}/05_aggregated/all-{type}.bam",
+        sorted = "output/{SUP_SAMPLE}/05_aggregated/all-{type}.sorted.bam"
+    threads: 1
+    conda:
+       "envs/bt.yaml"
+    params:
+        ref_genome_fasta = config["ref_genome_final"],
+        name = "{SUP_SAMPLE}"
+    benchmark:
+        "log/benchmark/{SUP_SAMPLE}-bwa-whole-time-{type}.txt"
+    shell:
+        "bash scripts/bwa_mem.sh {input.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}" 
 
 rule count_repeat:
     input:
@@ -326,7 +347,7 @@ rule postprocessing:
         ref_genome_fasta = config["ref_genome_final"],
         type= "{type}"
     shell:
-        "bash scripts/postprocessing.sh {input.all_fasta} {params.txt} {output.split_folder} {output.bwa_folder} {params.type}"
+        "bash scripts/postprocessing.sh {input.all_fasta} {params.txt} {output.split_folder} {output.bwa_folder} {params.type} {params.ref_genome_fasta}"
 
 rule bwasw:
     input:
@@ -341,6 +362,8 @@ rule bwasw:
         sorted = "output/{SUP_SAMPLE}/06_sorted",
         ref_genome_fasta = config["ref_genome_final"],
         name = "{SUP_SAMPLE}"
+    conda:
+       "envs/bt.yaml"
     shell:
         "bwasw \
         -b 5 \
@@ -360,6 +383,8 @@ rule bwa_mem:
         bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
         sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
     threads: 2
+    conda:
+       "envs/bt.yaml" 
     params:
         fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
         sorted = "output/{SUP_SAMPLE}/06_sorted",
