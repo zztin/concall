@@ -1,4 +1,4 @@
-configfile: "./config.yaml"
+configfile: "./config_test2.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -16,7 +16,7 @@ configfile: "./config.yaml"
 #ruleorder: aggregation > aggregate_csv
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 #ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
-ruleorder: bwa_mem > bwasw > postprocessing
+ruleorder: bwasw > bwa_mem> postprocessing
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
@@ -31,8 +31,10 @@ print("SAMPLES", SAMPLES)
 
 rule all:
     input:
-         expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type=TYPES)
+#         expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type=TYPES)
 #        expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam", SUP_SAMPLE=SUP_SAMPLES , type = TYPES, count_name = range(1,41) )
+#        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
+        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 #         expand("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done", SUP_SAMPLE=SUP_SAMPLES , type = TYPES)
 #        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
@@ -41,7 +43,7 @@ rule all:
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 
-localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta
+localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem, aggregation, count_repeat, split_fasta, postprocessing
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
@@ -76,23 +78,22 @@ rule fastq_get_fasta:
     shell:
         "sed -n '1~4s/^@/>/p;2~4p' {input.fastq} > {output.fasta}"
 
-rule batch_fasta:
-    input:
-        fasta = "output/{SUP_SAMPLE}/00_fasta/{meta_sample}.fasta"
-    output:
-        fasta = dynamic("output/{SUP_SAMPLE}/001_split_fasta/{meta_sample}_{batch}.fasta")
-    params:
-        prefix = "output/{SUP_SAMPLE}/001_split_fasta/",
-        meta_name = "{meta_sample}"
-    shell:
-#        "split -l 10000 --numeric-suffixes {input.fasta} -prefix {params.prefix}{meta_name}"
-        "split -l 10000 --numeric-suffixes fastq_runid_b34d7bee27a29183de20e0eedc1ce071341579d2_0.fastq /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/data/samples/CY_SS_PC_HN_0001_005_000_GU_303_FAS/fastq_runid_b34d7bee27a29183de20e0eedc1ce071341579d2_0 --additional-suffix=.fastq"
+#rule batch_fasta:
+#    input:
+#        fasta = "output/{SUP_SAMPLE}/00_fasta/{meta_sample}.fasta"
+#    output:
+#        fasta = dynamic("output/{SUP_SAMPLE}/001_split_fasta/{sample}.fasta")
+#    params:
+#        prefix = "output/{SUP_SAMPLE}/001_split_fasta/{meta_sample}",
+#    shell:
+#        "split -l 8000 --numeric-suffixes {input.fasta} {params.prefix} --additional-suffix=.fasta"
+
 rule bowtie_build:
     # did not remove output while rule failed...
     # How to write output? answer here: https://www.biostars.org/p/342988/
 #    group: "bowtie_split"
     input:
-        fasta = "output/{SUP_SAMPLE}/001_split_fasta/{sample}.fasta",
+        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta",
         done =  "output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"
     params:
         re_path="output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
@@ -300,28 +301,35 @@ rule split_fasta:
          donefile = "output/{SUP_SAMPLE}/04_done/{type}_bin_name.done",
          fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta"
     output:
-        folder_02_split = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}"),
-        done = touch("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done"),
+        split = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"),
+        done = touch("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done")
+    conda:
+        "envs/bt-new.yaml"
     params:
-        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}"
+        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}",
+        split = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"
     shell:
-        "python scripts/split_fasta.py {output.folder_02_split} {params.txt} {input.fasta};"
+        "python scripts/split_fasta.py {output.split} {params.txt} {input.fasta}"
 
 rule postprocessing:
     input:
         done= "output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done"
     output:
-        sam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam",
-        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
-        sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done"),
+        split_folder = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}/"),
+        bwa_folder = directory("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}")
+#        sam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sdam",
+#        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
+#        sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
     threads: 2
     params:
-        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
-        sorted = "output/{SUP_SAMPLE}/06_sorted",
+#        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
+#        sorted = "output/{SUP_SAMPLE}/06_sorted",
         ref_genome_fasta = config["ref_genome_final"],
-        name = "{SUP_SAMPLE}"
+        type= "{type}"
+        
     shell:
-        "bash scripts/postprocessing.sh 02_split_{params.name}/ 03_bwa_{params.name} {params.name}"
+        "bash scripts/postprocessing.sh {output.split_folder} {output.bwa_folder} {params.type}"
 
 rule bwasw:
     input:
@@ -374,7 +382,7 @@ rule bwa_mem:
 
 rule final_stats_aggregation_bb:
     input:
-        sorted = expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_bb/{count_name}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, count_name=range(1,40))
+        sorted = expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_bb/{count_name}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, count_name=range(1,41))
     output:
         done=touch("output/{SUP_SAMPLE}/07_stats_done/stats_bb.done"),
         out_dir = directory("output/{SUP_SAMPLE}/06_stats_bb/")
@@ -382,6 +390,8 @@ rule final_stats_aggregation_bb:
         base_folder = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_bb/",
 #        out_folder = "output/{SUP_SAMPLE}/06_stats_bb/",
         type = "bb"
+    conda:
+        "envs/bt.yaml"
     shell:
         "python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {output.out_dir}"
 #        "python scripts/calculate_depth_new_py37.py -d {params.base_folder}; mkdir -p {params.base_folder}/04_sam {params.base_folder}/05_bam {params.base_folder}/06_sorted_bam {params.base_folder}/../../06_stats_{params.type};mv {params.base_folder}/*.sorted.bam {params.base_folder}/06_sorted_bam; mv {params.base_folder}/*.sam {params.base_folder}/04_sam; mv {params.base_folder}/*.bam* {params.base_folder}/05_bam; mv {params.base_folder}/*sambamba_out* {params.base_folder}/../../06_stats_{params.type}"
@@ -389,7 +399,7 @@ rule final_stats_aggregation_bb:
 
 rule final_stats_aggregation_ins:
     input:
-        sorted = expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_ins/{count_name}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, count_name=range(1,40))
+        sorted = expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_ins/{count_name}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, count_name=range(1,41))
     output:
         done=touch("output/{SUP_SAMPLE}/07_stats_done/stats_ins.done"),
         out_dir = directory("output/{SUP_SAMPLE}/06_stats_ins/")
@@ -397,6 +407,8 @@ rule final_stats_aggregation_ins:
         base_folder = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_ins/",
 #        out_folder = "output/{SUP_SAMPLE}/06_stats_ins/",
         type = "ins"
+    conda:
+        "envs/bt.yaml"
     shell:
         "python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {output.out_dir}"
 #        "mkdir -p {params.base_folder}/../../06_stats_{params.type}; python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {params.out_folder}"
