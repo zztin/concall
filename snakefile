@@ -288,7 +288,7 @@ rule count_repeat:
         csv = rules.aggregation.output.csv
     output:
         folder = directory("output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}"),
-        done = touch("output/{SUP_SAMPLE}/04_done/{type}_bin_name.done")
+        done = touch("output/{SUP_SAMPLE}/04_done/bin_name_{type}.done")
     conda:
         "envs/bt.yaml"
     log:
@@ -296,40 +296,37 @@ rule count_repeat:
     shell:
         "python scripts/fastq_splitby_consensus.py {output.folder} {input.csv} > {log};"
 
-rule split_fasta:
-    input:
-         donefile = "output/{SUP_SAMPLE}/04_done/{type}_bin_name.done",
-         fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta"
-    output:
-        split = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"),
-        done = touch("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done")
-    conda:
-        "envs/bt-new.yaml"
-    params:
-        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}",
-        split = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"
-    shell:
-        "python scripts/split_fasta.py {output.split} {params.txt} {input.fasta}"
+#rule split_fasta:
+#    input:
+#         donefile = "output/{SUP_SAMPLE}/04_done/{type}_bin_name.done",
+#         fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta"
+#    output:
+#        split = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"),
+#        done = touch("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done")
+#    conda:
+#        "envs/bt-new.yaml"
+#    params:
+#        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}",
+#        split = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"
+#    shell:
+#        "python scripts/split_fasta.py {output.split} {params.txt} {input.fasta}"
 
 rule postprocessing:
     input:
-        done= "output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done"
+        all_fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta",
+# in params        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}"
+        done= "output/{SUP_SAMPLE}/04_done/bin_name_{type}.done"
     output:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done"),
         split_folder = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}/"),
         bwa_folder = directory("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}")
-#        sam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sdam",
-#        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
-#        sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
     threads: 2
     params:
-#        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
-#        sorted = "output/{SUP_SAMPLE}/06_sorted",
+        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}",
         ref_genome_fasta = config["ref_genome_final"],
         type= "{type}"
-        
     shell:
-        "bash scripts/postprocessing.sh {output.split_folder} {output.bwa_folder} {params.type}"
+        "bash scripts/postprocessing.sh {input.all_fasta} {params.txt} {output.split_folder} {output.bwa_folder} {params.type}"
 
 rule bwasw:
     input:
