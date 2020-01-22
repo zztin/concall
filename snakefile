@@ -43,7 +43,7 @@ rule all:
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 
-localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem, aggregation, count_repeat, split_fasta, postprocessing
+localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem, aggregation, count_repeat,  postprocessing
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
