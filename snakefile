@@ -1,4 +1,4 @@
-configfile: "./config_DER4126.yaml"
+configfile: "./config.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -16,7 +16,6 @@ configfile: "./config_DER4126.yaml"
 #ruleorder: aggregation > aggregate_csv
 # ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
 #ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
-ruleorder: bwasw > bwa_mem> postprocessing
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
