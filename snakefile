@@ -1,4 +1,4 @@
-configfile: "./config.yaml"
+configfile: "./config_test2.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -43,7 +43,7 @@ rule all:
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 
-localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem, aggregation, count_repeat,  postprocessing
+localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem,  count_repeat,  postprocessing
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
@@ -275,12 +275,16 @@ rule aggregation:
         ins_fasta = expand("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
            SUP_SAMPLE=SUP_SAMPLES,
            sample=SAMPLES)
+    log:
+        csv = "log/{SUP_SAMPLE}/cat_csv}.log",
+        bb = "log/{SUP_SAMPLE}/cat_bb.log",
+        ins = "log/{SUP_SAMPLE}/cat_ins.log"
     output:
         csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
         bb = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_bb.fasta",
         ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
     shell:
-        "cat {input.csv} > {output.csv}; cat {input.bb_fasta} > {output.bb}; cat {input.ins_fasta} > {output.ins}"
+        "cat {input.csv} > {output.csv} 2> {log.csv}; cat {input.bb_fasta} > {output.bb} 2> {log.bb}; cat {input.ins_fasta} > {output.ins} 2> {log.ins}"
 
 rule bwa_whole:
     input:
