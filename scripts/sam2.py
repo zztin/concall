@@ -10,6 +10,9 @@ ins_outFile = sys.argv[4]
 stats_outFile = sys.argv[5]
 min_gap = int(sys.argv[6])
 max_gap = int(sys.argv[7])
+
+## enhancement: filter out short mapped backbones
+
 # Create a dict with lists of SimpleRead using referenceName as key
 myDict = collections.defaultdict(list)
 for read in samFile:
@@ -17,8 +20,9 @@ for read in samFile:
     try:
         alnErr = sum(x[1] for x in read.cigartuples if x[0] in [1,2])
         if alnErr/float(read.reference_end) < 0.2:
-        #read.reference_start + read.infer_query_length(always=True)
-            myDict[read.reference_name].append((read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name))
+            if (read.reference_end - read.reference_start) > 220:
+                #read.reference_start + read.infer_query_length(always=True)
+                myDict[read.reference_name].append((read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name))
     except TypeError as e:
         # if there is no matching reads in sam file
         touch(ins_outFile)
@@ -42,6 +46,7 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
             # python3 = fqFile.readline().rstrip() # need testing. 
             readName=next(fasta_file).rstrip()
             readSeq=next(fasta_file).rstrip()
+            raw_read_length = len(readSeq)
 #            readPlus=fqFile.next().rstrip()
 #            readPhred=fqFile.next().rstrip()
             readId=readName[1:].split()[0]
@@ -56,6 +61,8 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
                         0,
                         0,
                         0,
+                        0,
+                        raw_read_length,
                         0]])+'\n')
                 continue
 
@@ -74,6 +81,12 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
 #                dump_bb_File.write(readPhred[x[0]:x[1]] + '\n')
 
             # Mind the gaps, should be inserts
+            RCA_starting_bases = [x[0] for x in cur_bbs] # read.reference_start for read.reference_start in read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name 
+            if len(RCA_starting_bases)>=2:
+                RCA_starting_bases.sort()
+                RCA_length = [(RCA_starting_bases[i] -RCA_starting_bases[i-1]) for i in range(1,len(RCA_starting_bases))]
+            else:
+                RCA_length = [0]
             gaps = []
             if min_gap < cur_bbs[0][0] < max_gap:
                 gaps.append((0,cur_bbs[0][0]))
@@ -94,7 +107,7 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
 #                dumpFile.write(readPlus+'\n')
 
                 # Add perfect phred scores for forced primers
-#                dumpFile.write(readPhred[x[0]:x[1]] + '\n')
+#                dumpFile.wrCA_starting_bases = [x for (x,y,j,k) in cur_bbs]
 
             statFile.write(', '.join(
                 [str(y) for y in
@@ -103,7 +116,10 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
                     sum([x[2] for x in cur_bbs]),
                     np.median([x[1]-x[0] for x in cur_bbs]),
                     len(gaps),
-                    (np.median([x[1]-x[0] for x in gaps]) if len(gaps)>0 else 0)]])+'\n')
+                    (np.median([x[1]-x[0] for x in gaps]) if len(gaps)>0 else 0),
+                    raw_read_length,
+                    np.median(RCA_length)]]) + '\n')
+                    #(np.median(RCA_length) if len(RCA_length)>0 else 0)]])+'\n')
 
     except StopIteration:
         pass
