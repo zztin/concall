@@ -1,4 +1,4 @@
-configfile: "./config-DER4387.yaml"
+configfile: "./config-MUT.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -169,8 +169,8 @@ rule split_by_backbone:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam",
         fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     params:
-        min_insert_length = 50, 
-        max_insert_length = 500
+        min_insert_length = config['min_insert_length'],
+        max_insert_length = config['max_insert_length']
     benchmark:
 # specify wildcard!!!
         "log/benchmark/{SUP_SAMPLE}xxx{sample}.sam2_split_time.txt"
@@ -280,16 +280,16 @@ rule aggregation:
         bb = "log/{SUP_SAMPLE}/cat_bb.log",
         ins = "log/{SUP_SAMPLE}/cat_ins.log"
     output:
-        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
-        bb = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_bb.fasta",
-        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
+        csv = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-stats.csv",
+        bb = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta",
+        ins = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta"
     shell:
         "cat {input.csv} > {output.csv} 2> {log.csv}; cat {input.bb_fasta} > {output.bb} 2> {log.bb}; cat {input.ins_fasta} > {output.ins} 2> {log.ins}"
 
 rule bwa_whole:
     input:
 #        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
-        fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta",
+        fasta = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_{type}.fasta",
 #        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
     output:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done"),
@@ -337,7 +337,7 @@ rule count_repeat:
 
 rule postprocessing:
     input:
-        all_fasta = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_{type}.fasta",
+        all_fasta = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_{type}.fasta",
 # in params        txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}"
         done= "output/{SUP_SAMPLE}/04_done/bin_name_{type}.done"
     output:
