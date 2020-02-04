@@ -154,7 +154,8 @@ rule bowtie_map_backbone_to_read:
         "log/{SUP_SAMPLE}/bt-split_{sample}.log"
     output:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"
-    shell: "bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
+    shell: "bowtie2 --end-to-end --very-sensitive --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
+    #shell: "bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
 
 #rule clean_bowtie_ref:
 #    input:
