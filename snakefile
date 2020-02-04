@@ -1,4 +1,4 @@
-configfile: "./config-MUT.yaml"
+configfile: "./config-DER4458.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -34,7 +34,8 @@ rule all:
 #        expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam", SUP_SAMPLE=SUP_SAMPLES , type = TYPES, count_name = range(1,41) )
 #        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
         expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
+        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+        expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 #         expand("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done", SUP_SAMPLE=SUP_SAMPLES , type = TYPES)
 #        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
@@ -43,7 +44,7 @@ rule all:
 #d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
 #        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
 
-localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem,  count_repeat
+localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem,  count_repeat, sambamba
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
@@ -376,6 +377,17 @@ rule bwasw:
         -T 15 \
         -t 4 \
         -f {output.sam} {params.ref_genome_fasta} {params.fasta}"
+
+rule sambamba:
+    input:
+        bamfiles_folder = folder("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/")
+    output:
+        done = "output/{SUP_SAMPLE}/04_done/{type}_sambamba.done"
+    conda:
+        "envs/bt.yaml"
+    shell:
+        "python scripts/calculate_depth_new_py37.py -i {bamfiles_folder}"
+
 
 rule bwa_mem:
     input:

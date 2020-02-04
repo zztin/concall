@@ -13,14 +13,14 @@ max_gap = int(sys.argv[7])
 
 ## enhancement: filter out short mapped backbones
 
-# Create a dict with lists of SimpleRead using referenceName as key
+# Create a dict with lists of SimpleRead using referenceName as key. Only good quality backbone matches are recorded.
 myDict = collections.defaultdict(list)
 for read in samFile:
     # Remove matches that suck
     try:
         alnErr = sum(x[1] for x in read.cigartuples if x[0] in [1,2])
         if alnErr/float(read.reference_end) < 0.2:
-            if (read.reference_end - read.reference_start) > 220:
+            if (read.reference_end - read.reference_start) > 150:
                 #read.reference_start + read.infer_query_length(always=True)
                 myDict[read.reference_name].append((read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name))
     except TypeError as e:
@@ -53,6 +53,7 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
 
 
             cutId = 1
+            # if read does not contains quality backbone reads in previous step nothing would be recorded, as a result, all fields are filled with zero except raw read length here.
             if readId not in myDict:
                 statFile.write(', '.join(
                     [str(y) for y in
