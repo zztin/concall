@@ -1,4 +1,4 @@
-configfile: "./config-DER4458.yaml"
+configfile: "./config-DER4127.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -154,7 +154,7 @@ rule bowtie_map_backbone_to_read:
         "log/{SUP_SAMPLE}/bt-split_{sample}.log"
     output:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"
-    shell: "bowtie2 --end-to-end --very-sensitive --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
+    shell: "bowtie2 --end-to-end --very-sensitive -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
     #shell: "bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
 
 #rule clean_bowtie_ref:
@@ -381,13 +381,15 @@ rule bwasw:
 
 rule sambamba:
     input:
-        bamfiles_folder = folder("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/")
+        "output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done"
+    params:
+        bamfiles_folder = directory("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/")
     output:
-        done = "output/{SUP_SAMPLE}/04_done/{type}_sambamba.done"
+        done = touch("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done")
     conda:
         "envs/bt.yaml"
     shell:
-        "python scripts/calculate_depth_new_py37.py -i {bamfiles_folder}"
+        "python scripts/calculate_depth_new_py37.py -i {params.bamfiles_folder}"
 
 
 rule bwa_mem:

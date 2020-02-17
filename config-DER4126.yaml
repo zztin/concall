@@ -10,3 +10,7 @@ ref_genome_final:
     /hpc/cog_bioinf/GENOMES/Cyclomics_reference_genome/version12/Homo_sapiens.GRCh37.GATK.illumina_cyclomics_backbone.fasta   
 BBTYPE:
     data/seg/bb-C.fa
+min_insert_length:
+    0
+max_insert_length:
+    300000

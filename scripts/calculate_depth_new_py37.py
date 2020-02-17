@@ -40,8 +40,8 @@ for f in os.listdir(opt.input_dir):
 # Create folders
 move = True
 if move ==True:
-    os.system(f"mkdir -p {opt.output}/01_sam {opt.output}/02_bam {opt.output}/05_sorted {opt.output}/06_sambamba")
+    os.system(f"mkdir -p {opt.output}/01_sam {opt.output}/02_bam {opt.output}/03_sorted {opt.output}/04_sambamba")
     os.system(f"mv {opt.output}/*.sorted.* {opt.output}/03_sorted")
     os.system(f"mv {opt.output}/*.sam {opt.output}/01_sam")
     os.system(f"mv {opt.output}/*.bam {opt.output}/02_bam")
-    os.system("mv {opt.output}/*sambamba_out* {opt.output}/04_sambamba")
+    os.system(f"mv {opt.output}/*sambamba_out* {opt.output}/04_sambamba")
