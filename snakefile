@@ -33,11 +33,11 @@ rule all:
 #         expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type=TYPES)
 #        expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam", SUP_SAMPLE=SUP_SAMPLES , type = TYPES, count_name = range(1,41) )
 #        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
-        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-        expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
+#        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+#        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+#        expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 #         expand("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done", SUP_SAMPLE=SUP_SAMPLES , type = TYPES)
-#        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
+        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
 #        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
 #        expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
@@ -266,27 +266,51 @@ rule smolecule_bb:
 #    shell:
 #        "cat {input} > {output.csv}"
 
-
-rule aggregation:
+rule agg:
     input:
-        csv = expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-#        bb_fasta = aggregate_input
-        bb_fasta = expand("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta",
-           SUP_SAMPLE=SUP_SAMPLES,
-           sample=SAMPLES),
-        ins_fasta = expand("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
-           SUP_SAMPLE=SUP_SAMPLES,
-           sample=SAMPLES)
-    log:
-        csv = "log/{SUP_SAMPLE}/cat_csv}.log",
-        bb = "log/{SUP_SAMPLE}/cat_bb.log",
-        ins = "log/{SUP_SAMPLE}/cat_ins.log"
+        mdk_bb = expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        mdk_ins = expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
     output:
-        csv = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-stats.csv",
-        bb = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta",
-        ins = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta"
+        done = touch("output/{SUP_SAMPLE}/04_done/{SUP_SAMPLE}_all_mdk.done")
     shell:
-        "cat {input.csv} > {output.csv} 2> {log.csv}; cat {input.bb_fasta} > {output.bb} 2> {log.bb}; cat {input.ins_fasta} > {output.ins} 2> {log.ins}"
+        "echo 'rule agg executed.'"
+rule aggregate_python:
+    input:
+        mdk_bb = expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        mdk_ins = expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+    output:
+        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
+        bb = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta",
+        ins = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta",
+        done = touch("output/{SUP_SAMPLE}/04_done/aggregate.done")
+    params:
+        bb = "output/{SUP_SAMPLE}/03_consensus/bb",
+        ins = "output/{SUP_SAMPLE}/03_consensus/ins",
+        stats = "output/{SUP_SAMPLE}/02_split/stats"
+    shell:
+        "cat {params.bb}/*/consensus.fasta > {output.bb};"
+        "cat {params.ins}/*/consensus.fasta > {output.ins};"
+        "cat {params.stats}/*.csv > {output.csv};"
+
+#rule aggregation:
+#    input:
+#        csv = expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+#        bb_fasta = expand("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta",
+#           SUP_SAMPLE=SUP_SAMPLES,
+#           sample=SAMPLES),
+#        ins_fasta = expand("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
+#           SUP_SAMPLE=SUP_SAMPLES,
+#           sample=SAMPLES)
+#    log:
+#        csv = "log/{SUP_SAMPLE}/cat_csv}.log",
+#        bb = "log/{SUP_SAMPLE}/cat_bb.log",
+#        ins = "log/{SUP_SAMPLE}/cat_ins.log"
+#    output:
+#        csv = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-stats.csv",
+#        bb = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta",
+#        ins = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta"
+#    shell:
+#        "cat {input.csv} > {output.csv} 2> {log.csv}; cat {input.bb_fasta} > {output.bb} 2> {log.bb}; cat {input.ins_fasta} > {output.ins} 2> {log.ins}"
 
 rule bwa_whole:
     input:
@@ -311,7 +335,7 @@ rule bwa_whole:
 
 rule count_repeat:
     input:
-        csv = rules.aggregation.output.csv
+        csv = rules.aggregate_python.output.csv
     output:
         folder = directory("output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}"),
         done = touch("output/{SUP_SAMPLE}/04_done/bin_name_{type}.done")
