@@ -1,4 +1,5 @@
-configfile: "./config-DER4127.yaml"
+
+configfile: "./config-testbowtie.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -30,19 +31,10 @@ print("SAMPLES", SAMPLES)
 
 rule all:
     input:
-#         expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type=TYPES)
-#        expand("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam", SUP_SAMPLE=SUP_SAMPLES , type = TYPES, count_name = range(1,41) )
-#        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
-#        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-#        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sorted.bam", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-#        expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
-#         expand("output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done", SUP_SAMPLE=SUP_SAMPLES , type = TYPES)
-        expand("output/{SUP_SAMPLE}/05_aggregated/stats.csv", SUP_SAMPLE=SUP_SAMPLES)
-#        expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-#        expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-#        expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-#d        expand("output/03_consensus/bb/{sample}/consensus.fasta", sample=SAMPLES)
-#        expand("output/011/{SUP_SAMPLE}_{sample}.done", sample=SAMPLES)
+        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+#        expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
+
 
 localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem,  count_repeat, sambamba
 
