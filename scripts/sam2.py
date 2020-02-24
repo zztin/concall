@@ -2,7 +2,7 @@ import sys
 import pysam
 import collections
 import numpy as np
-
+import touch
 samFile = pysam.AlignmentFile(sys.argv[1], "rb")
 in_fasta_path = sys.argv[2]
 bb_outFile = sys.argv[3]
@@ -25,9 +25,9 @@ for read in samFile:
                 myDict[read.reference_name].append((read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name))
     except TypeError as e:
         # if there is no matching reads in sam file
-        touch(ins_outFile)
-        touch(bb_outFile)
-        touch(stats_outFile)
+        touch.touch(ins_outFile)
+        touch.touch(bb_outFile)
+        touch.touch(stats_outFile)
         exit() 
 # Combine matches per read
 sortedKeys =list( myDict.keys())
