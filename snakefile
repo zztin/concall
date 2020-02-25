@@ -1,6 +1,5 @@
-configfile: "./config-test-gz.yaml"
-#configfile: "./config-testbowtie.yaml"
-#configfile: "./config.yaml"
+configfile: "./config-DER4498_P260.yaml"
+#configfile: "./config-test-gz.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
 #IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
@@ -35,7 +34,7 @@ rule all:
 #        expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done", SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
 localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem,  count_repeat, sambamba
@@ -148,7 +147,7 @@ rule bowtie_map_backbone_to_read:
         "log/{SUP_SAMPLE}/bt-split_{sample}.log"
     output:
         sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"
-    shell: "bowtie2 --end-to-end --very-sensitive -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
+    shell: "bowtie2 --local --very-sensitive -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
     #shell: "bowtie2 --local -D 20 -R 3 -N 0 -L 15 -i S,1,0.5 --rdg 2,1 --rfg 2,1 --mp 3,2 --ma 2 -a -p {threads} -f -x {params.basename} -U {input.split_by} -S {output.sam} > {log} 2>&1"
 
 #rule clean_bowtie_ref:
@@ -280,7 +279,7 @@ rule aggregate_python:
 
 rule aggregate_tide:
     input:
-        mdk_bb = expand("output/{SUP_SAMPLE}/04_done/{sample}_tide.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        tide_done = expand("output/{SUP_SAMPLE}/04_done/{sample}_tide.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
     output:
         tide = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
         done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
@@ -510,7 +509,8 @@ rule tideHunter:
        prime_5="data/seg/3_prime_bbcr.fa",
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
-        tide="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta"
+        tide="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     threads: 4
     shell:
         "/hpc/cog_bioinf/ridder/users/lchen/Tools/TideHunter/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tide}"
