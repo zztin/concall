@@ -31,9 +31,10 @@ print("SAMPLES", SAMPLES)
 
 rule all:
     input:
-        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+#        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 #        expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
@@ -315,25 +316,24 @@ rule cutadapt:
     shell:
         "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.ins} > {output.summary}"
 
-#rule aggregation:
-#    input:
-#        csv = expand("output/{SUP_SAMPLE}/02_split/stats/{sample}.csv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-#        bb_fasta = expand("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta",
-#           SUP_SAMPLE=SUP_SAMPLES,
-#           sample=SAMPLES),
-#        ins_fasta = expand("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
-#           SUP_SAMPLE=SUP_SAMPLES,
-#           sample=SAMPLES)
-#    log:
-#        csv = "log/{SUP_SAMPLE}/cat_csv}.log",
-#        bb = "log/{SUP_SAMPLE}/cat_bb.log",
-#        ins = "log/{SUP_SAMPLE}/cat_ins.log"
-#    output:
-#        csv = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-stats.csv",
-#        bb = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta",
-#        ins = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta"
-#    shell:
-#        "cat {input.csv} > {output.csv} 2> {log.csv}; cat {input.bb_fasta} > {output.bb} 2> {log.bb}; cat {input.ins_fasta} > {output.ins} 2> {log.ins}"
+
+rule bwa_after_cutadapt:
+    input:
+        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta",        
+    output:
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done"),
+        sam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sam",
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.bam",
+        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam"
+    threads: 1
+    conda:
+       "envs/bt.yaml"
+    params:
+        ref_genome_fasta = config["ref_genome_final"],
+        name = "{SUP_SAMPLE}"
+    shell:
+        "bash scripts/bwa_mem.sh {input.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}"
+
 
 rule bwa_whole:
     input:
