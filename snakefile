@@ -1,5 +1,5 @@
-
-configfile: "./config-testbowtie.yaml"
+configfile: "./config-test-gz.yaml"
+#configfile: "./config-testbowtie.yaml"
 #configfile: "./config.yaml"
 # SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
 # SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
@@ -33,8 +33,9 @@ rule all:
     input:
         expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 #        expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
-
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+        expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
 localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem,  count_repeat, sambamba
 
@@ -258,14 +259,6 @@ rule smolecule_bb:
 #    shell:
 #        "cat {input} > {output.csv}"
 
-rule agg:
-    input:
-        mdk_bb = expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-        mdk_ins = expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
-    output:
-        done = touch("output/{SUP_SAMPLE}/04_done/{SUP_SAMPLE}_all_mdk.done")
-    shell:
-        "echo 'rule agg executed.'"
 rule aggregate_python:
     input:
         mdk_bb = expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
@@ -283,6 +276,44 @@ rule aggregate_python:
         "cat {params.bb}/*/consensus.fasta > {output.bb};"
         "cat {params.ins}/*/consensus.fasta > {output.ins};"
         "cat {params.stats}/*.csv > {output.csv};"
+
+rule aggregate_tide:
+    input:
+        mdk_bb = expand("output/{SUP_SAMPLE}/04_done/{sample}_tide.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+    output:
+        tide = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
+        done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
+    params:
+        tide = "output/{SUP_SAMPLE}/05_aggregated/tide",
+    shell:
+        "cat {params.tide}/*_tide_consensus.fasta > {output.tide};"
+
+rule cutadapt_tide:
+    input:
+        tide="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
+        done="output/{SUP_SAMPLE}/04_done/aggregate_tide.done"
+    output:
+        cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cut_info.csv",
+        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta",
+        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_summary.txt"
+    conda:"envs/bt.yaml"
+    shell:
+        "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.tide} > {output.summary}"
+
+
+rule cutadapt:
+    # -e error rate
+    # -b adaptor sequence (bb) can be anywhere in sequence. If in middle, all down stream of read is trimmed.
+    # check cutadapt program
+    input:
+        ins = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta"
+    output:
+        cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv",
+        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta",
+        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_summary.txt"
+    conda:"envs/bt.yaml"
+    shell:
+        "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.ins} > {output.summary}"
 
 #rule aggregation:
 #    input:
@@ -470,6 +501,20 @@ rule final_stats_aggregation_ins:
 #        "mkdir -p {params.base_folder}/../../06_stats_{params.type}; python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {params.out_folder}"
 #        "python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {params.out_folder}; mkdir -p {params.base_folder}/../../06_stats_{params.type};cp {params.base_folder}/*sambamba_out* {params.base_folder}../../06_stats_{params.type}"
 #        "python scripts/calculate_depth_new_py37.py -d {params.base_folder}; mkdir -p {params.base_folder}/04_sam {params.base_folder}/05_bam {params.base_folder}/06_sorted_bam {params.base_folder}/../../06_stats_{params.type};mv {params.base_folder}/*.sorted.bam {params.base_folder}/06_sorted_bam; mv {params.base_folder}/*.sam {params.base_folder}/04_sam; mv {params.base_folder}/*.bam* {params.base_folder}/05_bam; mv {params.base_folder}/*sambamba_out* {params.base_folder}/../../06_stats_{params.type}"
+
+rule tideHunter:
+    # -f 2: output is fasta format (9 columns)
+    # column 8: fullLen: if the read contains backbone (5' and 3' end found)
+    input:
+       prime_3="data/seg/5_prime_bbcr.fa",
+       prime_5="data/seg/3_prime_bbcr.fa",
+       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        tide="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta"
+    threads: 4
+    shell:
+        "/hpc/cog_bioinf/ridder/users/lchen/Tools/TideHunter/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tide}"
+
 
 #rule medaka:
 #    input:
