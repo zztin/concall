@@ -1,21 +1,4 @@
-configfile: "./config-DER4498_P260.yaml"
-#configfile: "./config-test-gz.yaml"
-# SAMPLES = ["40reads_119r10"] # <--- THIS IS WORKING
-# SAMPLES = ["FAK80297_b08ac56b5a71e0628cfd2168a44680a365dc559f_301"]
-#IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/"
-#IN_PATH = "/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/conbow2/results/"
-#IN_PATH = os.path.expanduser(config["IN_PATH"])
-#SUP_SAMPLES = ["CY_SS_PC_HC_0001_001_000_GU_303_HAC_20191031"]
-
-#SEG = ["bb4", "targets"] 
-#TYPE = ["bb", "ins"]
-# snakemake define the first rule of the Snakefile as the target.
-# Therefore, it is best practice to have a rule "all" on top of the workflow which define the target files as input files.
-# end point
-#ruleorder: gz_fastq_get_fasta > fastq_get_fasta
-#ruleorder: aggregation > aggregate_csv
-# ruleorder: bowtie_wrapper_map > bowtie_map_backbone_to_read
-#ruleorder: bowtie_map_backbone_to_read > bowtie_wrapper_map
+configfile:"./config-DER4535.yaml"
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
@@ -25,19 +8,18 @@ if config['gz'] == True:
 else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
 
-
 print("SAMPLES", SAMPLES)
 
 rule all:
     input:
 #        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 #        expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+#        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
-localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, bwasw, bwa_mem,  count_repeat, sambamba
+localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, bwasw, bwa_mem,  count_repeat, sambamba
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
@@ -83,7 +65,6 @@ rule fastq_get_fasta:
 #        "split -l 8000 --numeric-suffixes {input.fasta} {params.prefix} --additional-suffix=.fasta"
 
 rule bowtie_build:
-    # did not remove output while rule failed...
     # How to write output? answer here: https://www.biostars.org/p/342988/
 #    group: "bowtie_split"
     input:
@@ -96,6 +77,9 @@ rule bowtie_build:
     threads: 8
     conda:
         "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)    
     output:
         touch('output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done')
     shell:
@@ -137,8 +121,12 @@ rule bowtie_map_backbone_to_read:
         # directory specified in the BOWTIE2_INDEXES environment variable.
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
-        basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
+        basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference",
+        runtime="6h"
     threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 40000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 6),
     conda:
         "envs/bt.yaml"
     benchmark:
@@ -175,6 +163,9 @@ rule split_by_backbone:
         stats = "output/{SUP_SAMPLE}/02_split/stats/{sample}.csv"
     log:
         "log/{SUP_SAMPLE}/sam2_split_{sample}.log"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:
         "envs/pysam-env.yaml"
     shell:
@@ -197,6 +188,9 @@ rule smolecule_ins:
     threads: 4
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:
         "envs/smolecule-env.yaml"
     shell:
@@ -218,6 +212,9 @@ rule smolecule_bb:
     threads: 4
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:
         "envs/smolecule-env.yaml"
     shell:
@@ -296,6 +293,9 @@ rule cutadapt_tide:
         cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cut_info.csv",
         fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta",
         summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_summary.txt"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:"envs/bt.yaml"
     shell:
         "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.tide} > {output.summary}"
@@ -311,6 +311,9 @@ rule cutadapt:
         cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv",
         fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta",
         summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_summary.txt"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:"envs/bt.yaml"
     shell:
         "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.ins} > {output.summary}"
@@ -325,6 +328,9 @@ rule bwa_after_cutadapt:
         bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.bam",
         sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam"
     threads: 1
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:
        "envs/bt.yaml"
     params:
@@ -334,26 +340,29 @@ rule bwa_after_cutadapt:
         "bash scripts/bwa_mem.sh {input.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}"
 
 
-rule bwa_whole:
-    input:
-#        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
-        fasta = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_{type}.fasta",
-#        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
-    output:
-        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done"),
-        sam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sam",
-        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.bam",
-        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sorted.bam"
-    threads: 1
-    conda:
-       "envs/bt.yaml"
-    params:
-        ref_genome_fasta = config["ref_genome_final"],
-        name = "{SUP_SAMPLE}"
-    benchmark:
-        "log/benchmark/{SUP_SAMPLE}-bwa-whole-time-{type}.txt"
-    shell:
-        "bash scripts/bwa_mem.sh {input.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}" 
+#rule bwa_whole:
+#    input:
+##        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
+#        fasta = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_{type}.fasta",
+##        ins = "output/{SUP_SAMPLE}/05_aggregated/all_consensus_ins.fasta"
+#    output:
+#        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done"),
+#        sam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sam",
+#        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.bam",
+#        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-{type}.sorted.bam"
+#    threads: 1
+#    resources:
+#        mem_mb=lambda wildcards, attempt: attempt * 8000,
+#        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+#    conda:
+#       "envs/bt.yaml"
+#    params:
+#        ref_genome_fasta = config["ref_genome_final"],
+#        name = "{SUP_SAMPLE}"
+#    benchmark:
+#        "log/benchmark/{SUP_SAMPLE}-bwa-whole-time-{type}.txt"
+#    shell:
+#        "bash scripts/bwa_mem.sh {input.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}" 
 
 rule count_repeat:
     input:
@@ -397,6 +406,9 @@ rule postprocessing:
         txt = "output/{SUP_SAMPLE}/05_aggregated/01_txt_{type}",
         ref_genome_fasta = config["ref_genome_final"],
         type= "{type}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 8000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)    
     shell:
         "bash scripts/postprocessing.sh {input.all_fasta} {params.txt} {output.split_folder} {output.bwa_folder} {params.type} {params.ref_genome_fasta}"
 
@@ -413,6 +425,9 @@ rule bwasw:
         sorted = "output/{SUP_SAMPLE}/06_sorted",
         ref_genome_fasta = config["ref_genome_final"],
         name = "{SUP_SAMPLE}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:
        "envs/bt.yaml"
     shell:
@@ -434,6 +449,9 @@ rule sambamba:
         done = touch("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done")
     conda:
         "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
         "python scripts/calculate_depth_new_py37.py -i {params.bamfiles_folder}"
 
@@ -447,8 +465,11 @@ rule bwa_mem:
         bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
         sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
     threads: 2
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:
-       "envs/bt.yaml" 
+       "envs/bt.yaml"
     params:
         fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
         sorted = "output/{SUP_SAMPLE}/06_sorted",
@@ -476,6 +497,9 @@ rule final_stats_aggregation_bb:
         base_folder = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_bb/",
 #        out_folder = "output/{SUP_SAMPLE}/06_stats_bb/",
         type = "bb"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
     conda:
         "envs/bt.yaml"
     shell:
@@ -495,6 +519,9 @@ rule final_stats_aggregation_ins:
         type = "ins"
     conda:
         "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
         "python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {output.out_dir}"
 #        "mkdir -p {params.base_folder}/../../06_stats_{params.type}; python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {params.out_folder}"
@@ -512,6 +539,9 @@ rule tideHunter:
         tide="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     threads: 4
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
         "/hpc/cog_bioinf/ridder/users/lchen/Tools/TideHunter/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tide}"
 
