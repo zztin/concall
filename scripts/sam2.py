@@ -20,7 +20,7 @@ for read in samFile:
     try:
         alnErr = sum(x[1] for x in read.cigartuples if x[0] in [1,2])
         if alnErr/float(read.reference_end) < 0.2:
-            if (read.reference_end - read.reference_start) > 150:
+            if (read.reference_end - read.reference_start) > 40:
                 #read.reference_start + read.infer_query_length(always=True)
                 myDict[read.reference_name].append((read.reference_start,read.reference_end,read.flag&(1<<4)>0,read.query_name))
     except TypeError as e:
@@ -121,8 +121,9 @@ with open(in_fasta_path,'r') as fasta_file, open(ins_outFile,'w') as dumpFile, \
                     raw_read_length,
                     np.median(RCA_length)]]) + '\n')
                     #(np.median(RCA_length) if len(RCA_length)>0 else 0)]])+'\n')
-
     except StopIteration:
         pass
+
+
 
 #print('Splitting data finished.')
