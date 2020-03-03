@@ -1,4 +1,4 @@
-configfile:"./config-DER4535.yaml"
+configfile:"./config-DER4498_P260.yaml"
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
@@ -16,7 +16,7 @@ rule all:
 #        expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 #        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done", SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta", SUP_SAMPLE=SUP_SAMPLES),
+#        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
 localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, bwasw, bwa_mem,  count_repeat, sambamba
@@ -74,6 +74,8 @@ rule bowtie_build:
         re_path="output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
     log:
         "log/{SUP_SAMPLE}/bt-build_{sample}.log"
+    benchmark:
+        "log/benchmark/{SUP_SAMPLE}_{sample}_bowtie_build.txt"
     threads: 8
     conda:
         "envs/bt.yaml"
@@ -122,7 +124,7 @@ rule bowtie_map_backbone_to_read:
         # if this doesn't work, try:
         # export BOWTIE2_INDEXES=/path/to/my/bowtie2/databases/
         basename = "output/{SUP_SAMPLE}/01_bowtie/{sample}/reference",
-        runtime="6h"
+        #runtime="6h"
     threads: 8
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 40000,
@@ -189,8 +191,8 @@ rule smolecule_ins:
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+        mem_mb=lambda wildcards, attempt: attempt * 6000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
     conda:
         "envs/smolecule-env.yaml"
     shell:
@@ -213,8 +215,8 @@ rule smolecule_bb:
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+        mem_mb=lambda wildcards, attempt: attempt * 6000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
     conda:
         "envs/smolecule-env.yaml"
     shell:
