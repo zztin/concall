@@ -40,7 +40,7 @@ rule gz_fastq_get_fasta:
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fastq = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"),
-        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+        fasta = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta")
     shell:
         "zcat {input.gz} > {output.fastq};\
          sed -n '1~4s/^@/>/p;2~4p' {output.fastq} > {output.fasta}"
