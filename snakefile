@@ -1,4 +1,4 @@
-configfile:"./config-DER4498_P260.yaml"
+configfile:"./config-DER4535.yaml"
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
@@ -19,7 +19,17 @@ rule all:
 #        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
-localrules: all, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, bwasw, bwa_mem,  count_repeat, sambamba
+localrules: all, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, bwasw, bwa_mem,  count_repeat, sambamba
+
+rule get_timestamp:
+    input:
+        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        timestamp = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle"
+    conda:
+        "envs/bt.yaml"
+    script:
+        "scripts/get_timestamp.py -i {input.fasta} -o {output.timestamp} -n {SUP_SAMPLE} --datype 'fa' " 
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
@@ -128,7 +138,7 @@ rule bowtie_map_backbone_to_read:
     threads: 8
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 40000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 6),
+        runtime=lambda wildcards, attempt, input: ( attempt * 1),
     conda:
         "envs/bt.yaml"
     benchmark:
@@ -291,6 +301,7 @@ rule cutadapt_tide:
     input:
         tide="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
         done="output/{SUP_SAMPLE}/04_done/aggregate_tide.done"
+    
     output:
         cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cut_info.csv",
         fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta",
