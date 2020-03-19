@@ -7,19 +7,12 @@ if config['gz'] == True:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
 else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
-
-print("SAMPLES", SAMPLES)
-
 rule all:
     input:
-#        expand("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-#        expand("output/{SUP_SAMPLE}/07_stats_done/stats_{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
-#        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}-{type}.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done", SUP_SAMPLE=SUP_SAMPLES),
-#        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
-localrules: all, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, bwasw, bwa_mem,  count_repeat, sambamba
+localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
 
 rule get_timestamp:
     input:
@@ -192,7 +185,9 @@ rule smolecule_ins:
     params:
         path = directory("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/"),
     output:
-        consensus = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
+        con_folder = directory("output/{SUP_SAMPLE}/03_consensus/ins/{sample}/"),
+#        consensus = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta",
+#        consensus_folder = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}",
         done = touch("output/{SUP_SAMPLE}/04_done/{sample}_ins.done"),
 #        consensus = "output/{SUP_SAMPLE}/03_consensus/ins/{sample}/consensus.fasta"
     log:
@@ -201,12 +196,12 @@ rule smolecule_ins:
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 6000,
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {params.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.con_folder} > {log} 2>&1"
          #set +u; source activate snake-mdk; set -u;
          #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
 
@@ -215,10 +210,11 @@ rule smolecule_bb:
     input:
         fasta = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta"
     output:
+        con_folder = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/"),
         done = touch("output/{SUP_SAMPLE}/04_done/{sample}_bb.done"),
-        consensus = "output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta"
-    params:
-        path = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/")
+#        consensus = "output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta"
+#    params:
+#        path = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/")
     log:
         "log/{SUP_SAMPLE}/smol_bb_{sample}.log"
     threads: 4
@@ -230,7 +226,7 @@ rule smolecule_bb:
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {params.path} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.con_folder} > {log} 2>&1"
 
 # how to make sure all samples are done?
 #ALL_BB, = glob_wildcards(output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta")
@@ -552,11 +548,12 @@ rule tideHunter:
         tide="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     threads: 4
+    singularity: "tidehunter.sif"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "/hpc/cog_bioinf/ridder/users/lchen/Tools/TideHunter/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tide}"
+        "/TideHunter-v1.2.2/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tide}"
 
 
 #rule medaka:
