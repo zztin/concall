@@ -9,7 +9,7 @@ else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
 rule all:
     input:
-        expand("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
@@ -39,7 +39,7 @@ rule gz_fastq_get_fasta:
     # this rule takes > 5 sec < 60 sec to generate output files while submitted to cluster.
 #    group: "bowtie_split"
     input:
-        gz = config['rawdir']+"/{sample}.fastq.gz"
+        gz = ancient(config['rawdir']+"/{sample}.fastq.gz")
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fastq = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"),
@@ -50,7 +50,7 @@ rule gz_fastq_get_fasta:
 rule fastq_get_fasta:
 #    group: "bowtie_split"
     input:
-        fastq  = config['rawdir']+"/{sample}.fastq"
+        fastq  = ancient(config['rawdir']+"/{sample}.fastq")
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fasta = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta")
@@ -71,8 +71,8 @@ rule bowtie_build:
     # How to write output? answer here: https://www.biostars.org/p/342988/
 #    group: "bowtie_split"
     input:
-        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta",
-        done =  "output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"
+        fasta = ancient("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"),
+        done =  ancient("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done")
     params:
         re_path="output/{SUP_SAMPLE}/01_bowtie/{sample}/reference"
     log:
@@ -120,7 +120,7 @@ rule bowtie_map_backbone_to_read:
 #    group: "bowtie_split"
     input:
         split_by = config["BBTYPE"],
-        done = "output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done"
+        done = ancient("output/{SUP_SAMPLE}/01_bowtie/{sample}/bowtie_build_{sample}.done")
     params:
         # -x expect to find index files at current folder, then in the
         # directory specified in the BOWTIE2_INDEXES environment variable.
@@ -154,8 +154,8 @@ rule bowtie_map_backbone_to_read:
 rule split_by_backbone:
 #    group: "bowtie_split"
     input:
-        sam = "output/{SUP_SAMPLE}/01_bowtie/{sample}.sam",
-        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+        sam = ancient("output/{SUP_SAMPLE}/01_bowtie/{sample}.sam"),
+        fasta = ancient("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta")
     params:
         min_insert_length = config['min_insert_length'],
         max_insert_length = config['max_insert_length']
@@ -196,19 +196,34 @@ rule smolecule_ins:
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_ins_time.txt"
     resources:
+        attempt = lambda wildcards, attempt: attempt,        
         mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.con_folder} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.con_folder} > {log}{resources.attempt} 2>&1"
          #set +u; source activate snake-mdk; set -u;
          #medaka smolecule --length 50 --depth 5 --threads {threads} {input.fasta} {output.path} > {log} 2>&1
+
+rule bwa:
+    input:
+        fa = config['rawdir']+"{SAMPLES}.bam.bai",
+    params:
+        ref = config['genome']
+    output:
+        done = touch("output/{SAMPLES}/bwa.done"),
+        sam = "output/{SAMPLES}.sam"
+    resources:
+        attempt = lambda wildcards, attempt: attempt,
+        mem_mb=lambda wildcards, attempt: attempt * 4,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    log: '{SAMPLES}.log'
 
 rule smolecule_bb:
 #    group: "smolecule"
     input:
-        fasta = "output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta"
+        fasta = ancient("output/{SUP_SAMPLE}/02_split/bb/{sample}.fasta")
     output:
         con_folder = directory("output/{SUP_SAMPLE}/03_consensus/bb/{sample}/"),
         done = touch("output/{SUP_SAMPLE}/04_done/{sample}_bb.done"),
@@ -221,12 +236,13 @@ rule smolecule_bb:
     benchmark:
         "log/benchmark/{SUP_SAMPLE}_{sample}.smolecule_bb_time.txt"
     resources:
+        attempt = lambda wildcards, attempt: attempt,
         mem_mb=lambda wildcards, attempt: attempt * 6000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     conda:
         "envs/smolecule-env.yaml"
     shell:
-         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.con_folder} > {log} 2>&1"
+         "ulimit -c 0; medaka smolecule --length 30 --depth 1 --threads {threads} {input.fasta} {output.con_folder} > {log}{resources.attempt} 2>&1"
 
 # how to make sure all samples are done?
 #ALL_BB, = glob_wildcards(output/{SUP_SAMPLE}/03_consensus/bb/{sample}/consensus.fasta")
@@ -284,7 +300,7 @@ rule aggregate_python:
 
 rule aggregate_tide:
     input:
-        tide_done = expand("output/{SUP_SAMPLE}/04_done/{sample}_tide.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        tide_fasta = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
     output:
         tide = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
         done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
@@ -293,21 +309,6 @@ rule aggregate_tide:
     shell:
         "cat {params.tide}/*_tide_consensus.fasta > {output.tide};"
 
-rule cutadapt_tide:
-    input:
-        tide="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
-        done="output/{SUP_SAMPLE}/04_done/aggregate_tide.done"
-    
-    output:
-        cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cut_info.csv",
-        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta",
-        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_summary.txt"
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 4)
-    conda:"envs/bt.yaml"
-    shell:
-        "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.tide} > {output.summary}"
 
 
 rule cutadapt:
@@ -321,34 +322,65 @@ rule cutadapt:
         fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta",
         summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_summary.txt"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        mem_mb=lambda wildcards, attempt: attempt * 16000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:"envs/bt.yaml"
     shell:
         "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.ins} > {output.summary}"
 
 
-rule bwa_after_cutadapt:
+#rule bwa_after_cutadapt:
+#    input:
+#        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta",        
+#    output:
+#        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done"),
+#        sam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sam",
+#        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.bam",
+#        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam"
+#    threads: 1
+#    resources:
+#        mem_mb=lambda wildcards, attempt: attempt * 4000,
+#        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+#    conda:
+#       "envs/bt.yaml"
+#    params:
+#        ref_genome_fasta = config["ref_genome_final"],
+#        name = "{SUP_SAMPLE}"
+#    shell:
+#        "bash scripts/bwa_mem.sh {input.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}"
+
+rule bwa_wrapper_after_cutadapt:
     input:
-        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta",        
+        reads="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta"
     output:
-        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa-whole-{SUP_SAMPLE}_clean_bb.done"),
-        sam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sam",
-        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.bam",
-        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam"
-    threads: 1
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 4)
-    conda:
-       "envs/bt.yaml"
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper.done")
+    log:
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-        ref_genome_fasta = config["ref_genome_final"],
-        name = "{SUP_SAMPLE}"
+        index=config["ref_genome_final"],
+        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
+        sort_extra="-l 9"            # Extra args for samtools/picard.
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 12000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    wrapper:
+        "0.50.0/bio/bwa/mem"
+
+rule bwa_index:
+    input:
+        bam="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam",
+        tide_bam= "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam"
+    output:
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done")
+    conda:
+        "envs/bt.yaml"
     shell:
-        "bash scripts/bwa_mem.sh {input.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}"
-
-
+        "samtools index {input.bam};"
+        "samtools index {input.tide_bam}"
 #rule bwa_whole:
 #    input:
 ##        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
@@ -537,23 +569,72 @@ rule final_stats_aggregation_ins:
 #        "python scripts/calculate_depth_new_py37.py -i {params.base_folder} -o {params.out_folder}; mkdir -p {params.base_folder}/../../06_stats_{params.type};cp {params.base_folder}/*sambamba_out* {params.base_folder}../../06_stats_{params.type}"
 #        "python scripts/calculate_depth_new_py37.py -d {params.base_folder}; mkdir -p {params.base_folder}/04_sam {params.base_folder}/05_bam {params.base_folder}/06_sorted_bam {params.base_folder}/../../06_stats_{params.type};mv {params.base_folder}/*.sorted.bam {params.base_folder}/06_sorted_bam; mv {params.base_folder}/*.sam {params.base_folder}/04_sam; mv {params.base_folder}/*.bam* {params.base_folder}/05_bam; mv {params.base_folder}/*sambamba_out* {params.base_folder}/../../06_stats_{params.type}"
 
-rule tideHunter:
-    # -f 2: output is fasta format (9 columns)
-    # column 8: fullLen: if the read contains backbone (5' and 3' end found)
+rule tidehunter_sing:
     input:
        prime_3="data/seg/5_prime_bbcr.fa",
        prime_5="data/seg/3_prime_bbcr.fa",
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
-        tide="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     threads: 4
-    singularity: "tidehunter.sif"
+    singularity:
+        "tidehunter.sif"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "/TideHunter-v1.2.2/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tide}"
+        "/TideHunter-v1.2.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
+
+rule trim_tide:
+    # before BWA
+    input:
+        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv"
+    output:
+        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+        pickle="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_tsv.pickle.gz"
+    conda:
+       "envs/bt.yaml"
+    shell:
+        "python3 scripts/trim_tide_fasta_long_readname.py {input.tsv} {output.fasta} {output.pickle}"
+
+rule cutadapt_tide:
+    input:
+        tide="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
+        done="output/{SUP_SAMPLE}/04_done/aggregate_tide.done"
+
+    output:
+        cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cut_info.csv",
+        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta",
+        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_summary.txt"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    conda:"envs/bt.yaml"
+    shell:
+        "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.tide} > {output.summary}"
+
+rule bwa_wrapper_tide:
+    input:
+        reads="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta"
+    output:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide.done")
+    log:
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
+    params:
+        index=config["ref_genome_final"],
+        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
+        sort_extra="-l 9"            # Extra args for samtools/picard.
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    wrapper:
+        "0.50.0/bio/bwa/mem"
+
 
 
 #rule medaka:
