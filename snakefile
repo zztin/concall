@@ -1,4 +1,4 @@
-configfile:"./config_test2.yaml"
+configfile:"./config-test2.yaml"
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
@@ -11,9 +11,9 @@ rule all:
     input:
         # timestamp, tide results, medaka results, cutadapt_info, bb_barcode(to be implement), tagged_bam_files (to be implement)
         expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle", SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide.done", SUP_SAMPLE=SUP_SAMPLES),
+#        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide.done", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+#        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES)
 
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
 ruleorder: tidehunter_conda > tidehunter_sing
@@ -293,7 +293,7 @@ rule aggregate_python:
     output:
         csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
         bb = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta",
-        ins = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta",
+        ins = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta"),
         done = touch("output/{SUP_SAMPLE}/04_done/aggregate.done")
     params:
         bb = "output/{SUP_SAMPLE}/03_consensus/bb",
@@ -308,7 +308,7 @@ rule aggregate_tide:
     input:
         tide_fasta = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
     output:
-        tide = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
+        tide = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta"),
         done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
     params:
         tide = "output/{SUP_SAMPLE}/05_aggregated/tide",
@@ -372,6 +372,26 @@ rule bwa_wrapper_after_cutadapt:
     threads: 8
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 12000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    wrapper:
+        "0.50.0/bio/bwa/mem"
+
+rule bwa_wrapper_bb:
+    input:
+        reads="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta"
+    output:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam",
+    log:
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
+    params:
+        index=config["ref_genome_final"],
+        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
+        sort_extra="-l 9"            # Extra args for samtools/picard.
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
         "0.50.0/bio/bwa/mem"
