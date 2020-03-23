@@ -39,7 +39,7 @@ def get_timestamp(in_path, out_path, name, datype="fa"):
     if out_path == None:
         out_path= in_path
 
-    with open(f'{out_path}/{name}_timestamp.pickle', 'wb') as handle:
+    with open(out_path, 'wb') as handle:
         pickle.dump(time_string, handle, protocol=pickle.HIGHEST_PROTOCOL)
     print("get_timestamp.py finished.")
 
