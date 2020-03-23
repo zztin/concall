@@ -1,4 +1,4 @@
-#configfile:"./config-DER4535.yaml"
+configfile:"./config_test2.yaml"
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
@@ -9,12 +9,14 @@ else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
 rule all:
     input:
-        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle", SUP_SAMPLE=SUP_SAMPLES)
-#        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
-#        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+        # timestamp, tide results, medaka results, cutadapt_info, bb_barcode(to be implement), tagged_bam_files (to be implement)
+        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
-
+ruleorder: tidehunter_conda > tidehunter_sing
 rule get_timestamp:
     input:
         fasta = expand("output/{SUP_SAMPLE}/00_fasta/{SAMPLE}.fasta", SAMPLE=SAMPLES, SUP_SAMPLE=SUP_SAMPLES)
@@ -582,6 +584,8 @@ rule tidehunter_sing:
         tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     threads: 4
+    conda:
+        "envs/bt.yaml"
     singularity:
         "tidehunter.sif"
     resources:
@@ -589,6 +593,23 @@ rule tidehunter_sing:
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
         "/TideHunter-v1.2.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
+
+rule tidehunter_conda:
+    input:
+       prime_3="data/seg/5_prime_bbcr.fa",
+       prime_5="data/seg/3_prime_bbcr.fa",
+       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
+        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
+    threads: 4
+    conda:
+        "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+        "TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
 
 rule trim_tide:
     # before BWA
