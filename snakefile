@@ -16,7 +16,7 @@ rule all:
 #        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES)
 
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
-ruleorder: tidehunter_conda > tidehunter_sing
+ruleorder: tidehunter_sing > tidehunter_conda
 rule get_timestamp:
     input:
         fasta = expand("output/{SUP_SAMPLE}/00_fasta/{SAMPLE}.fasta", SAMPLE=SAMPLES, SUP_SAMPLE=SUP_SAMPLES)
@@ -624,7 +624,7 @@ rule tidehunter_conda:
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     threads: 4
     conda:
-        "envs/bt.yaml"
+        "envs/tidehunter.yaml"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
