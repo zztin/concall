@@ -1,4 +1,4 @@
-configfile:"./config-DER4535.yaml"
+#configfile:"./config-DER4535.yaml"
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
@@ -9,20 +9,24 @@ else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
 rule all:
     input:
-        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
+        expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle", SUP_SAMPLE=SUP_SAMPLES)
+#        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
+#        expand("output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv", SUP_SAMPLE=SUP_SAMPLES, type = TYPES),
 
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
 
 rule get_timestamp:
     input:
-        fasta = "output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+        fasta = expand("output/{SUP_SAMPLE}/00_fasta/{SAMPLE}.fasta", SAMPLE=SAMPLES, SUP_SAMPLE=SUP_SAMPLES)
     output:
         timestamp = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle"
+    params:
+        fa = "output/{SUP_SAMPLE}/00_fasta/",
+        name= "{SUP_SAMPLE}"
     conda:
         "envs/bt.yaml"
-    script:
-        "scripts/get_timestamp.py -i {input.fasta} -o {output.timestamp} -n {SUP_SAMPLE} --datype 'fa' " 
+    shell:
+        "python scripts/get_timestamp.py -i {params.fa} -o {output.timestamp} -n {params.name} --datype 'fa' " 
 
 rule bedtool_getfasta:
 #    group: "bowtie_split"
