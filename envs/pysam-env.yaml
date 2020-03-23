@@ -24,4 +24,6 @@ dependencies:
   - pip:
     - numpy==1.18.0
     - pysam==0.15.3
-
+    - public==2019.4.13
+    - touch==2019.4.13
+    - values==2019.4.13

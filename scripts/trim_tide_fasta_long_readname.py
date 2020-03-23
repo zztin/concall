@@ -17,8 +17,8 @@ tide = pd.read_csv(in_file, sep="\t", names=['readname',
                                           "fullLen",
                                           "subPos",
                                           "consensus"])
-tp = list(zip(tide.readname, tide.consensus))
-alist = [f">{i}\n{j}\n" for i,j in tp]
+tp = list(zip(tide.readname, tide.consN, tide.consensus))
+alist = [f">{i}_{j}\n{k}\n" for i,j,k in tp]
 string = "".join(alist)
 with open(out_fasta, "w") as f:
     f.write(string)

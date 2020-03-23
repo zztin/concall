@@ -336,56 +336,53 @@ rule bwa_wrapper_tide:
 
 
 
-rule tidehunter_sing:
-    input:
-       prime_3="data/seg/5_prime_bbcr.fa",
-       prime_5="data/seg/3_prime_bbcr.fa",
-       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
-    output:
-        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
-        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
-    threads: 4
-    singularity:
-        "tidehunter.sif"
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 1)
-    shell:
-        "/TideHunter-v1.2.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
-
-#rule tidehunter:
-#    # -f 2: output is fasta format (9 columns)
-#    # column 8: fullLen: if the read contains backbone (5' and 3' end found)
+#rule tidehunter_sing:
 #    input:
 #       prime_3="data/seg/5_prime_bbcr.fa",
 #       prime_5="data/seg/3_prime_bbcr.fa",
 #       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
 #    output:
-#        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
+#        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
 #        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
 #    threads: 4
-#    conda:
-#        "envs/bt.yaml"
+#    singularity:
+#        "tidehunter.sif"
 #    resources:
-#        mem_mb=lambda wildcards, attempt: attempt * 8000,
+#        mem_mb=lambda wildcards, attempt: attempt * 20000,
 #        runtime=lambda wildcards, attempt, input: ( attempt * 1)
 #    shell:
-##        "wget https://github.com/yangao07/TideHunter/releases/download/v1.2.1/TideHunter-v1.2.1.tar.gz;"
-##        "tar -zxvf TideHunter-v1.2.1.tar.gz;"
-#        "cd TideHunter; make;" 
-#        "TideHunter-local/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
+#        "/TideHunter-v1.2.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.fasta}"
+
+rule tidehunter:
+    # -f 2: output is fasta format (9 columns)
+    # column 8: fullLen: if the read contains backbone (5' and 3' end found)
+    input:
+       prime_3="data/seg/5_prime_bbcr.fa",
+       prime_5="data/seg/3_prime_bbcr.fa",
+       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
+    threads: 4
+    conda:
+        "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 8000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+        "TideHunter-local/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.fasta}"
 
 rule trim_tide:
     # before BWA
     input:
-        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv"
+        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta"
     output:
         fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
         pickle="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_tsv.pickle.gz"
     conda:
        "envs/bt.yaml"
     shell:
-        "python3 scripts/trim_tide_fasta_long_readname.py {input.tsv} {output.fasta} {output.pickle}"
+        "python3 scripts/trim_tide_fasta_long_readname_fasta.py {input.fasta} {output.fasta} {output.pickle}"
 #rule trim_tide_script:
 #    input:
 #        "output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv"
