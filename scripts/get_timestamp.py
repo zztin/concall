@@ -3,6 +3,7 @@ import collections
 from dateutil import parser
 import os
 import argparse
+import re
 
 def get_timestamp(in_path, out_path, name, datype="fa"):
     time_string = collections.OrderedDict()
@@ -26,22 +27,24 @@ def get_timestamp(in_path, out_path, name, datype="fa"):
             if file.endswith(".fasta"):
                 with open(os.path.join(in_path, file), "r") as file:
                     content = file.read().splitlines()
-
-                for i, txt in enumerate(content):
-
-                    if i % 2 == 0:
-                        readname = txt.split(" ")[0][1:]
-                        time_string[readname] = txt.split(" ")[4].split("T")[1][
-                                                :-1]  # time_string[readname] = time (hh:mm:ss)
-                        t = parser.isoparse(txt.split(" ")[4].split("=")[1])
-                        time_stamp[readname] = t.timestamp()
+                try:
+                    for i, txt in enumerate(content):
+                        if i % 2 == 0:
+                            readname = txt.split(" ")[0][1:]
+                            a = re.search("start_time=.*T", txt )
+                            if a is not None:
+                                ind = a.span()[1]
+                                time_string[readname] = txt[ind:ind+8]
+                            else:
+                                raise "unexpected readnames. Check fasta files."
+                except Exception as e:
+                    raise "unexpected results. Check fasta files format does it contains space and start_time = xxx"
 
     if out_path == None:
-        out_path= in_path
+        out_path= f"{in_path}_timestamp.pickle.gz"
 
     with open(out_path, 'wb') as handle:
         pickle.dump(time_string, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    print("get_timestamp.py finished.")
 
 if __name__ == '__main__':
     pa = argparse.ArgumentParser(description='Get timestamp of nanopore reads from raw fastq files.')
