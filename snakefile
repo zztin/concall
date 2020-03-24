@@ -604,8 +604,6 @@ rule tidehunter_sing:
         tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     threads: 4
-    conda:
-        "envs/bt.yaml"
     singularity:
         "tidehunter.sif"
     resources:
