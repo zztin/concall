@@ -1,0 +1,30 @@
+name: tidehunter
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=4.5
+  - ca-certificates=2019.11.28
+  - certifi=2019.11.28
+  - ld_impl_linux-64=2.34
+  - libffi=3.2
+  - libgcc-ng=9.2
+  - libgomp=9.2
+  - libstdcxx-ng=9.2
+  - ncurses=6.1
+  - openssl=1.1.1e
+  - pip=20.0
+  - python=3.8
+  - python_abi=3.8
+  - readline=8.0
+  - setuptools=46.1
+  - sqlite=3.30
+  - tidehunter=1.2
+  - tk=8.6
+  - wheel=0.34
+  - xz=5.2
+  - zlib=1.2
+prefix: /hpc/cog_bioinf/ridder/users/lchen/miniconda37_2/envs/tidehunter
+
