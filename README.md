@@ -24,11 +24,14 @@
 	cd concall/ # Where snakefile is located 
 	snakemake --use-conda
 	or
-	snakemake --use-conda --use-singularity  # at the moment singularity image is stored locally at .sif file. 
+	snakemake --use-conda --use-singularity  # at the moment singularity image is stored locally at .sif file which is not included in this repo. Please contact authors for further information.
 	
 **run on cluster: qsub or slurm **
 	
 	# testing: 
+	sh testing.sh
+	# or use this command:
+
 	snakemake --cluster sge_wrapper.py --jobs 50 --latency-wait 240 --use-conda --use-singularity --rerun-incomplete --keep-going --restart-times 3 --configfile ./test/config/config-test2.yaml
 	
 	# replace sge_wrapper.py with slurm_wrapper.py to submit to slurm
