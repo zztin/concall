@@ -1,13 +1,19 @@
 
 # Data locations. Change [your path] to where you put the project folder concall/.
 rawdir:
-    /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/data/samples/CY_SUP_SAMPLE_TEST
+    /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/test/fastq_3reads
 SUP_SAMPLES:
-    CY_SUP_SAMPLE_TEST 
-
-
+    TEST_fastq_3reads
+gz:
+    False
 genome:
     ch37: /hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta
-
-gz:
-    True
+ref_genome_final:
+    /hpc/cog_bioinf/GENOMES/Cyclomics_reference_genome/version12/Homo_sapiens.GRCh37.GATK.illumina_cyclomics_backbone.fasta
+BBTYPE:
+    data/seg/bb-C.fa
+min_insert_length:
+    0
+max_insert_length:
+    300000
+>>>>>>> 4a955e3... failing test since medaka does not build POA consensus bam file.
