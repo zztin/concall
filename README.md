@@ -22,26 +22,34 @@
 **run locally**
 
 	cd concall/ # Where snakefile is located 
-	snakemake   # this automatically search for snakefile and execute it
-
-**run on cluster: qsub**
-
-(This is also recorded in qsub_snake.sh in the repo)
-
-	snakemake --jobs 100 --latency-wait 600 --use-conda --cluster "qsub -l h_rt=02:00:00 -l h_vmem=30G  -l tmpspace=100G -o [your path]/concall/log/$(date "+%Y%m%d-%H%M%S")snake_stdout.txt -e [your path]/concall/log/$(date "+%Y%m%d-%H%M%S")snake_stderr.txt -pe threaded {threads}"`
-
-**predefined bash script for submission on cluster**
-	1. create config file at config-<name>.yaml
+	snakemake --use-conda
+	or
+	snakemake --use-conda --use-singularity  # at the moment singularity image is stored locally at .sif file. 
+	
+**run on cluster: qsub or slurm **
+	
+	# testing: 
+	snakemake --cluster sge_wrapper.py --jobs 50 --latency-wait 240 --use-conda --use-singularity --rerun-incomplete --keep-going --restart-times 3 --configfile ./test/config/config-test2.yaml
+	
+	# replace sge_wrapper.py with slurm_wrapper.py to submit to slurm
+	
+**submit via bash script for submission on cluster**
+	1. create config file at configfiles/config-<name>.yaml
 	2. submit to cluster with:
-	sh qsub_snakemake.sh <name>
+		
+		sh qsub_snakemake.sh <name>
+	
+	3. this will automatically generate an html report after the pipeline is finished.
 
 # Development
-**Currently the qsub functionality is still facing fatal errors that force quit the pipeline. However, if re-initiate, these jobs runs smoothly without error. Current suspection of the failure are related to the latency of creating files on hpc. Trying out different --latency-wait value to see if it helps. The error messages suggested that it is within each job that failed, however, executing these jobs separately in terminal gives no errors. Log files are empty for the failed jobs. 
-- 1. tried without specifying latency-wait: smolecule_ins/ smolecule_bb 2 out of 6 jobs failed
-- 2. latency-wait =600s, successfully finished.
-- 3. latency-wait =60s, failed at one of the smolecule_ins/smolecule_bb rule.
-- 4. retry latency-wait = 600s, failed at group job bowtie_split (all jobs failed).
-- 5? No idea what to suspect for the errors now...
+1. Tidehunter program can be run locally on a Singularity container (tidehunter.sif) is used as a local file at the moment.
+Recipe of the container is in the file Singularity. Currently Singularity Hub uses v2.5 but this image is built and tested on v3.5 machine. It gives errors if image is built by singularity hub and pull down to hpc. (this needs to fix. Before then, please contact the author to get the correct image of Singularity container.)
+2. Tidehunter is installed via 
+	
+	conda -c bioconda tidehunter
+	
+It runs normally on head node, compute node, but when submitted to hpc, fails occationally if running conda version. # need to check if it is resource issue? # need to check error message.
+
 
 Comtributions are welcome!"**
 
