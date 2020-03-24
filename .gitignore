@@ -1,0 +1,21 @@
+# ignore irrelevant files
+*.pickle
+*.html
+*.bam
+*.sif
+# ignore folders
+log
+data
+output
+# ignore gitignore
+.gitmodules
+.github/
+.travis.yml
+.gitlab-ci.yml
+.coveragerc
+# ignore config files
+config-*
+!config-test2.yaml
+# ignore snakemake metadata
+.snakemake
+
