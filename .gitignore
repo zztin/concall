@@ -17,4 +17,6 @@ output
 configfiles/
 # ignore snakemake metadata
 .snakemake
-
+# test
+test/output
+!test/output/TEST_snakemake2
