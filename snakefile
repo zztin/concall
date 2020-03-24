@@ -7,6 +7,7 @@ if config['gz'] == True:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
 else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
+print(f"There are {len(SAMPLES)} samples.")
 rule all:
     input:
         # timestamp, tide results, medaka results, cutadapt_info, bb_barcode(to be implement), tagged_bam_files (to be implement)
