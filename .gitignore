@@ -14,8 +14,7 @@ output
 .gitlab-ci.yml
 .coveragerc
 # ignore config files
-config-*
-!config-test2.yaml
+configfiles/
 # ignore snakemake metadata
 .snakemake
 
