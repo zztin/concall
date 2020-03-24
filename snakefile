@@ -1,4 +1,4 @@
-configfile:"./config-test2.yaml"
+configfile:"test/config/config-test2.yaml"
 SUP_SAMPLES = config['SUP_SAMPLES']
 TYPES = ["bb","ins"]
 
