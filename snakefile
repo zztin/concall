@@ -371,7 +371,7 @@ rule bwa_wrapper_after_cutadapt:
         sort_extra="-l 9"            # Extra args for samtools/picard.
     threads: 8
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 12000,
+        mem_mb=lambda wildcards, attempt: attempt * 40000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
         "0.50.0/bio/bwa/mem"
@@ -391,7 +391,7 @@ rule bwa_wrapper_bb:
         sort_extra="-l 9"            # Extra args for samtools/picard.
     threads: 8
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        mem_mb=lambda wildcards, attempt: attempt * 40000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
         "0.50.0/bio/bwa/mem"
@@ -673,7 +673,7 @@ rule bwa_wrapper_tide:
         sort_extra="-l 9"            # Extra args for samtools/picard.
     threads: 8
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        mem_mb=lambda wildcards, attempt: attempt * 40000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
         "0.50.0/bio/bwa/mem"
