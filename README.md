@@ -30,6 +30,10 @@
 
 	snakemake --jobs 100 --latency-wait 600 --use-conda --cluster "qsub -l h_rt=02:00:00 -l h_vmem=30G  -l tmpspace=100G -o [your path]/concall/log/$(date "+%Y%m%d-%H%M%S")snake_stdout.txt -e [your path]/concall/log/$(date "+%Y%m%d-%H%M%S")snake_stderr.txt -pe threaded {threads}"`
 
+**predefined bash script for submission on cluster**
+	1. create config file at config-<name>.yaml
+	2. submit to cluster with:
+	sh qsub_snakemake.sh <name>
 
 # Development
 **Currently the qsub functionality is still facing fatal errors that force quit the pipeline. However, if re-initiate, these jobs runs smoothly without error. Current suspection of the failure are related to the latency of creating files on hpc. Trying out different --latency-wait value to see if it helps. The error messages suggested that it is within each job that failed, however, executing these jobs separately in terminal gives no errors. Log files are empty for the failed jobs. 
