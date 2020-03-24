@@ -1,7 +1,7 @@
 
 # Data locations. Change [your path] to where you put the project folder concall/.
 rawdir:
-    /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/data/samples/test_40000reads
+    /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/test/test_data/test_40000reads
 SUP_SAMPLES:
     TEST16000
 gz:
