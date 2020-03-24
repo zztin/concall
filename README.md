@@ -53,6 +53,9 @@ Recipe of the container is in the file Singularity. Currently Singularity Hub us
 	
 It runs normally on head node, compute node, but when submitted to hpc, fails occationally if running conda version. # need to check if it is resource issue? # need to check error message.
 
+3. You can git clone the TideHunter package from https://github.com/Xinglab/TideHunter if to be run locally.
+
+
 
 Comtributions are welcome!"**
 
