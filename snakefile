@@ -176,8 +176,8 @@ rule split_by_backbone:
     log:
         "log/{SUP_SAMPLE}/sam2_split_{sample}.log"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+        runtime=1
     conda:
         "envs/pysam-env.yaml"
     shell:
