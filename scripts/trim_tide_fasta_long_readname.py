@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 in_file = sys.argv[1]
 out_fasta = sys.argv[2]
-out_pickle = sys.argv[3]
+#out_pickle = sys.argv[3]
 #out_file = "/Users/lchen/Projects/sam_add_tag/raw_data/05_aggregated/new.fasta"
 #in_file = "/Users/lchen/Projects/sam_add_tag/raw_data/05_aggregated/consensus_tide.tsv"
 
@@ -22,7 +22,7 @@ alist = [f">{i}_{j}\n{k}\n" for i,j,k in tp]
 string = "".join(alist)
 with open(out_fasta, "w") as f:
     f.write(string)
-pd.to_pickle(tide, out_pickle)
+#pd.to_pickle(tide, out_pickle)
 print("trimming task finished.")
 ## for testing
 # with open(out_file, "r") as f:

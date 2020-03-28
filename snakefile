@@ -308,14 +308,16 @@ rule aggregate_python:
 rule aggregate_tide:
     input:
         tide_fasta = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        tsv=expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
     output:
         tide = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta"),
+        tsv = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.tsv"),
         done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
     params:
         tide = "output/{SUP_SAMPLE}/05_aggregated/tide",
     shell:
         "cat {params.tide}/*_tide_consensus.fasta > {output.tide};"
-
+        "cat {params.tide}/*_tide_consensus.tsv > {output.tsv}"
 
 
 rule cutadapt:
@@ -613,6 +615,7 @@ rule tidehunter_sing:
     shell:
         "/TideHunter-v1.2.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
 
+
 rule tidehunter_conda:
     input:
        prime_3="data/seg/5_prime_bbcr.fa",
@@ -636,7 +639,7 @@ rule trim_tide:
         tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv"
     output:
         fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
-        pickle="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_tsv.pickle.gz"
+#        pickle="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_tsv.pickle.gz"
     conda:
        "envs/bt.yaml"
     shell:
