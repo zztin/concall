@@ -16,7 +16,12 @@
 
 # Usage
 `concall` can be run from command line after installation of snakemake.
-1. First, change the hard coded path in config files.
+1. Locate where your fastq/fastq.gz files are. Fastq files up to 40000 reads (from 40, 4000, to 40000) were tested. If fastq is over this range, batch them with scripts/batch_fastq_gz.sh; scripts/batch_fastq.sh. If the fastq is too small, use scripts/concat_fastq_gz.py to combine them into bigger fastq.  ## Bowtie build will increase run time exponentially when input file is bigger. Therefore smaller batch of fastq files is preferred. To retain the number of files in a managable range, limit the input files < 700 files (tested - of 20000 reads - P260).  
+	
+		scripts/batch_fastq_gz.sh <input_dir> <output_dir> 
+		scripts/concat_fastq.py <input_dir> <output_dir: exact path> <batch-size> <prefix>
+
+
 2. Second, decide where you want to run it (locally, or with qsub)
 
 **run locally**
