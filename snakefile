@@ -10,12 +10,14 @@ else:
 print(f"There are {len(SAMPLES)} samples, {SAMPLES}.")
 rule all:
     input:
-        # timestamp, tide results, medaka results, cutadapt_info, bb_barcode(to be implement), tagged_bam_files (to be implement)
+        # timestamp, tide results, medaka results, cutadapt_info, bb_barcode(to be implement), tagged_bam_files (to be implement), samtools stats
         expand("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle", SUP_SAMPLE=SUP_SAMPLES),
-#        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide.done", SUP_SAMPLE=SUP_SAMPLES),
+# bwa index for both tide and medaka
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
-#        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES)
-
+# samtool stats for tide
+        expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done", SUP_SAMPLE=SUP_SAMPLES),
+# align bb sequence for extracting barcode (can also use tide to extract barcode)
+        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES)
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
 ruleorder: tidehunter_sing > tidehunter_conda
 rule get_timestamp:
@@ -292,7 +294,7 @@ rule aggregate_python:
         mdk_bb = expand("output/{SUP_SAMPLE}/04_done/{sample}_bb.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
         mdk_ins = expand("output/{SUP_SAMPLE}/04_done/{sample}_ins.done", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
     output:
-        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
+        csv = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_medaka_stats.csv",
         bb = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta",
         ins = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_ins.fasta"),
         done = touch("output/{SUP_SAMPLE}/04_done/aggregate.done")
@@ -311,7 +313,7 @@ rule aggregate_tide:
         tsv=expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
     output:
         tide = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta"),
-        tsv = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.tsv"),
+        tsv = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.tsv",
         done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
     params:
         tide = "output/{SUP_SAMPLE}/05_aggregated/tide",
@@ -329,7 +331,7 @@ rule cutadapt:
     output:
         cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cut_info.csv",
         fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb.fasta",
-        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_summary.txt"
+        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cutadapt_summary.txt"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 16000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
@@ -643,7 +645,7 @@ rule trim_tide:
     conda:
        "envs/bt.yaml"
     shell:
-        "python3 scripts/trim_tide_fasta_long_readname.py {input.tsv} {output.fasta} {output.pickle}"
+        "python3 scripts/trim_tide_fasta_long_readname.py {input.tsv} {output.fasta}"
 
 rule cutadapt_tide:
     input:
@@ -653,7 +655,7 @@ rule cutadapt_tide:
     output:
         cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cut_info.csv",
         fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta",
-        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_summary.txt"
+        summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cutadapt_tide_summary.txt"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
@@ -682,7 +684,22 @@ rule bwa_wrapper_tide:
     wrapper:
         "0.50.0/bio/bwa/mem"
 
-
+rule plot_samtools_stats:
+    input:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam" 
+    output:
+        stats = "output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}.stats",
+        plot = directory("output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}_plot/"),
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done"),
+    params:
+        name = "{SUP_SAMPLE}_tide"
+    conda:
+        "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 200,
+    shell:
+        "samtools stats {input.bam} > {output.stats};"
+        "plot-bamstats -p {output.plot}{params.name} {output.stats}"
 
 #rule medaka:
 #    input:
