@@ -700,7 +700,7 @@ rule plot_samtools_stats:
     shell:
         "samtools stats {input.bam} > {output.stats};"
         "plot-bamstats -p {output.plot}{params.name} {output.stats};"
-        "cat {output.stats} | grep ^RL | cut -f 2- > {params.name}_RL.txt;"
+        "cat {output.stats} | grep ^RL | cut -f 2- > {output.plot}{params.name}_RL.txt;"
 
 #rule medaka:
 #    input:
