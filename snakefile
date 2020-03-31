@@ -696,10 +696,11 @@ rule plot_samtools_stats:
     conda:
         "envs/bt.yaml"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 200,
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
     shell:
         "samtools stats {input.bam} > {output.stats};"
-        "plot-bamstats -p {output.plot}{params.name} {output.stats}"
+        "plot-bamstats -p {output.plot}{params.name} {output.stats};"
+        "cat {output.stats} | grep ^RL | cut -f 2- > {params.name}_RL.txt;"
 
 #rule medaka:
 #    input:
