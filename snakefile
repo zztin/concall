@@ -686,7 +686,7 @@ rule bwa_wrapper_tide:
 
 rule plot_samtools_stats:
     input:
-        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam" 
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam", 
     output:
         stats = "output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}.stats",
         plot = directory("output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}_plot/"),
@@ -702,6 +702,23 @@ rule plot_samtools_stats:
         "plot-bamstats -p {output.plot}{params.name} {output.stats};"
         "cat {output.stats} | grep ^RL | cut -f 2- > {output.plot}{params.name}_RL.txt;"
 
+rule plot_samtools_stats_medaka:
+    input:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam",
+    output:
+        stats = "output/{SUP_SAMPLE}/08_samtools_stats/medaka/{SUP_SAMPLE}.stats",
+        plot = directory("output/{SUP_SAMPLE}/08_samtools_stats/medaka/{SUP_SAMPLE}_plot/"),
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done"),
+    params:
+        name = "{SUP_SAMPLE}_medaka"
+    conda:
+        "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+    shell:
+        "samtools stats {input.bam} > {output.stats};"
+        "plot-bamstats -p {output.plot}{params.name} {output.stats};"
+        "cat {output.stats} | grep ^RL | cut -f 2- > {output.plot}{params.name}_RL.txt;"
 #rule medaka:
 #    input:
 #        read = dynamic("data/output/03_read_repeats/{type}/{sample}/{readname}.fastq"),
