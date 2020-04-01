@@ -16,6 +16,7 @@ rule all:
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done", SUP_SAMPLE=SUP_SAMPLES),
 # samtool stats for tide
         expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_medaka.done", SUP_SAMPLE=SUP_SAMPLES),
 # align bb sequence for extracting barcode (can also use tide to extract barcode)
         expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES)
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
@@ -708,7 +709,7 @@ rule plot_samtools_stats_medaka:
     output:
         stats = "output/{SUP_SAMPLE}/08_samtools_stats/medaka/{SUP_SAMPLE}.stats",
         plot = directory("output/{SUP_SAMPLE}/08_samtools_stats/medaka/{SUP_SAMPLE}_plot/"),
-        done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done"),
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_medaka.done"),
     params:
         name = "{SUP_SAMPLE}_medaka"
     conda:
