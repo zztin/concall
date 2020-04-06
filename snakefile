@@ -18,7 +18,9 @@ rule all:
         expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done", SUP_SAMPLE=SUP_SAMPLES),
         expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_medaka.done", SUP_SAMPLE=SUP_SAMPLES),
 # align bb sequence for extracting barcode (can also use tide to extract barcode)
-        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES)
+#        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES),
+# per repeat bwa + sambamba result -- only for targeted
+        expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
 ruleorder: tidehunter_sing > tidehunter_conda
 rule get_timestamp:
@@ -386,7 +388,7 @@ rule bwa_wrapper_bb:
     input:
         reads="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_bb.fasta"
     output:
-        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam",
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.sorted.bam",
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
@@ -405,7 +407,8 @@ rule bwa_wrapper_bb:
 rule bwa_index:
     input:
         bam="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean.sorted.bam",
-        tide_bam= "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam"
+        tide_bam= "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam",
+        bb_bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.sorted.bam",
     output:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_index.done")
     conda:
@@ -413,6 +416,7 @@ rule bwa_index:
     shell:
         "samtools index {input.bam};"
         "samtools index {input.tide_bam}"
+        "samtools index {input.bb_bam}"
 #rule bwa_whole:
 #    input:
 ##        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
@@ -465,6 +469,7 @@ rule count_repeat:
 #    shell:
 #        "python scripts/split_fasta.py {output.split} {params.txt} {input.fasta}"
 
+# this rule is broken
 rule postprocessing:
     input:
         all_fasta = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_{type}.fasta",
@@ -472,7 +477,7 @@ rule postprocessing:
         done= "output/{SUP_SAMPLE}/04_done/bin_name_{type}.done"
     output:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done"),
-        split_folder = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}/"),
+        split_folder = directory("output/{SUP_SAMPLE}/05_aggregated/02_split_{type}"),
         bwa_folder = directory("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}")
     threads: 2
     params:
@@ -484,6 +489,7 @@ rule postprocessing:
         runtime=lambda wildcards, attempt, input: ( attempt * 1)    
     shell:
         "bash scripts/postprocessing.sh {input.all_fasta} {params.txt} {output.split_folder} {output.bwa_folder} {params.type} {params.ref_genome_fasta}"
+
 
 rule bwasw:
     input:
@@ -527,6 +533,70 @@ rule sambamba:
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
         "python scripts/calculate_depth_new_py37.py -i {params.bamfiles_folder}"
+
+rule bwasw:
+    input:
+        done= "output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done"
+    output:
+        sam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam",
+        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
+        sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
+    threads: 1
+    params:
+        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
+        sorted = "output/{SUP_SAMPLE}/06_sorted",
+        ref_genome_fasta = config["ref_genome_final"],
+        name = "{SUP_SAMPLE}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    conda:
+       "envs/bt.yaml"
+    shell:
+        "bwasw \
+        -b 5 \
+        -q 2 \
+        -r 1 \
+        -z 10 \
+        -T 15 \
+        -t 4 \
+        -f {output.sam} {params.ref_genome_fasta} {params.fasta}"
+
+rule sambamba:
+    input:
+        "output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done"
+    params:
+        bamfiles_folder = directory("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/")
+    output:
+        done = touch("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done")
+    conda:
+        "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+        "python scripts/calculate_depth_new_py37.py -i {params.bamfiles_folder}"
+### WOrking to replace last part of postprocessing
+#rule bwa_wrapper_per_repeat:
+#    input:
+#        reads="output/{SUP_SAMPLE}/05_aggregated/02_split_fasta/{rep}_consensus_{type}.fasta"
+#    output:
+#        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{rep}.bam",
+#        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_per_repeat.done")
+#    log:
+#        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_per_repeat.log"
+#    params:
+#        index=config["ref_genome_final"],
+#        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+#        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+#        sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
+#        sort_extra="-l 9"            # Extra args for samtools/picard.
+#    threads: 4
+#    resources:
+#        mem_mb=lambda wildcards, attempt: attempt * 10000,
+#        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+#    wrapper:
+#        "0.50.0/bio/bwa/mem"
 
 
 rule bwa_mem:
