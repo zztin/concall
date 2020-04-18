@@ -22,10 +22,18 @@ OUT=$DIR_OUTPUT
 python3 /hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/scripts/split_fasta.py ${DIR_FASTA} ${DIR_TXT} ${FILE_ALL_FASTA}
 
 for NUM in {1..40}; do
-/hpc/cog_bioinf/ridder/users/lchen/Projects/Medaka_t/concall/scripts/bwa.sh \
-        ${DIR_FASTA}/consensus_${INS_OR_BB}_${NUM}.fasta \
-        ${DIR_OUTPUT}/$NUM.sam \
-        $REF
+bwa bwasw \
+        -b 5 \
+        -q 2 \
+        -r 1 \
+        -z 10 \
+        -T 15 \
+        -t 4 \
+        -f ${DIR_OUTPUT}/$NUM.sam \
+        ${FILE_REF} \
+        ${DIR_FASTA}/consensus_${INS_OR_BB}_${NUM}.fasta
+
+
 # convert sam file into bam file and sort the bam files produce bam and bai files.
 
 /hpc/local/CentOS7/cog_bioinf/samtools-1.9/samtools view -h -F 256 $DIR_OUTPUT/$NUM.sam > $DIR_OUTPUT/$NUM.bam
