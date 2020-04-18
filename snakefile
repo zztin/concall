@@ -534,49 +534,51 @@ rule sambamba:
     shell:
         "python scripts/calculate_depth_new_py37.py -i {params.bamfiles_folder}"
 
-rule bwasw:
-    input:
-        done= "output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done"
-    output:
-        sam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam",
-        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
-        sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
-    threads: 1
-    params:
-        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
-        sorted = "output/{SUP_SAMPLE}/06_sorted",
-        ref_genome_fasta = config["ref_genome_final"],
-        name = "{SUP_SAMPLE}"
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 4)
-    conda:
-       "envs/bt.yaml"
-    shell:
-        "bwasw \
-        -b 5 \
-        -q 2 \
-        -r 1 \
-        -z 10 \
-        -T 15 \
-        -t 4 \
-        -f {output.sam} {params.ref_genome_fasta} {params.fasta}"
+#rule bwasw:
+#    input:
+#        done= "output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done"
+#    output:
+#        sam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam",
+#        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
+#        sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
+#    threads: 1
+#    params:
+#        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
+#        sorted = "output/{SUP_SAMPLE}/06_sorted",
+#        ref_genome_fasta = config["ref_genome_final"],
+#        name = "{SUP_SAMPLE}"
+#    resources:
+#        mem_mb=lambda wildcards, attempt: attempt * 4000,
+#        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+#    conda:
+#       "envs/bt.yaml"
+#    shell:
+#        "bwasw \
+#        -b 5 \
+#        -q 2 \
+#        -r 1 \
+#        -z 10 \
+#        -T 15 \
+#        -t 4 \
+#        -f {output.sam} {params.ref_genome_fasta} {params.fasta}"
+#
+#rule sambamba:
+#    input:
+#        "output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done"
+#    params:
+#        bamfiles_folder = directory("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/")
+#    output:
+#        done = touch("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done")
+#    conda:
+#        "envs/bt.yaml"
+#    resources:
+#        mem_mb=lambda wildcards, attempt: attempt * 2000,
+#        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+#    shell:
+#        "python scripts/calculate_depth_new_py37.py -i {params.bamfiles_folder}"
 
-rule sambamba:
-    input:
-        "output/{SUP_SAMPLE}/07_stats_done/postprocessing_{type}.done"
-    params:
-        bamfiles_folder = directory("output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/")
-    output:
-        done = touch("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done")
-    conda:
-        "envs/bt.yaml"
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 2000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 1)
-    shell:
-        "python scripts/calculate_depth_new_py37.py -i {params.bamfiles_folder}"
 ### WOrking to replace last part of postprocessing
+
 #rule bwa_wrapper_per_repeat:
 #    input:
 #        reads="output/{SUP_SAMPLE}/05_aggregated/02_split_fasta/{rep}_consensus_{type}.fasta"
