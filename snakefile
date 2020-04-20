@@ -20,7 +20,7 @@ rule all:
 # align bb sequence for extracting barcode (can also use tide to extract barcode)
 #        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.bam", SUP_SAMPLE=SUP_SAMPLES),
 # per repeat bwa + sambamba result -- only for targeted
-        expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
+        #expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
 ruleorder: tidehunter_sing > tidehunter_conda
 rule get_timestamp:
@@ -415,8 +415,8 @@ rule bwa_index:
         "envs/bt.yaml"
     shell:
         "samtools index {input.bam};"
-        "samtools index {input.tide_bam}"
-        "samtools index {input.bb_bam}"
+        "samtools index {input.tide_bam};"
+        "samtools index {input.bb_bam};"
 #rule bwa_whole:
 #    input:
 ##        csv = "output/{SUP_SAMPLE}/05_aggregated/stats.csv",
