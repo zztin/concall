@@ -22,7 +22,7 @@ rule all:
 # per repeat bwa + sambamba result -- only for targeted
         #expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
-ruleorder: tidehunter_conda > tidehunter_sing
+ruleorder: tidehunter_conda 
 rule get_timestamp:
     input:
         fasta = expand("output/{SUP_SAMPLE}/00_fasta/{SAMPLE}.fasta", SAMPLE=SAMPLES, SUP_SAMPLE=SUP_SAMPLES)
@@ -72,17 +72,18 @@ rule fastq_get_fasta:
 
 rule aggregate_tide:
     input:
-        tide_fasta = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-        tsv=expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        tide_all = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        tide_fasta_full_length = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_full_length.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        #tsv=expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
     output:
-        tide = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta"),
-        tsv = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.tsv",
-        done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
+        tide_all = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus.fasta"),
+        tide_full_length = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_full_length.fasta"),
+        #done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
     params:
         tide = "output/{SUP_SAMPLE}/05_aggregated/tide",
     shell:
-        "cat {params.tide}/*_tide_consensus.fasta > {output.tide};"
-        "cat {params.tide}/*_tide_consensus.tsv > {output.tsv}"
+        "cat {params.tide}/*_tide_consensus.fasta > {output.tide_all};"
+        "cat {params.tide}/*_tide_consensus_full_length.fasta > {output.tide_full_length};"
 
 
 rule cutadapt:
@@ -145,13 +146,15 @@ rule bwa_wrapper_bb:
 
 rule bwa_index:
     input:
-        tide_bam= "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam",
+        tide_bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.sorted.bam",
+        tide_bam_full_length = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl.sorted.bam",
     output:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_index_tide.done")
     conda:
         "envs/bt.yaml"
     shell:
         "samtools index {input.tide_bam};"
+        "samtools index {input.tide_bam_full_length}"
 
 rule bwa_mem:
     input:
@@ -175,32 +178,34 @@ rule bwa_mem:
     shell:
         "bash scripts/bwa_mem.sh {params.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}"
 
-rule tidehunter_sing:
+#rule tidehunter_sing:
+#    input:
+#       prime_3="data/seg/5_prime_bbcr.fa",
+#       prime_5="data/seg/3_prime_bbcr.fa",
+#       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+#    output:
+#        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+#        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
+#    threads: 4
+#    singularity:
+#        "tidehunter.sif"
+#    resources:
+#        mem_mb=lambda wildcards, attempt: attempt * 20000,
+#        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+#    shell:
+#        "/TideHunter-v1.2.2/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.fasta}"
+
+
+rule tidehunter_conda_full_length:
     input:
        prime_3="data/seg/5_prime_bbcr.fa",
        prime_5="data/seg/3_prime_bbcr.fa",
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
-        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
-        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
-    threads: 4
-    singularity:
-        "tidehunter.sif"
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 20000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 1)
-    shell:
-        "/TideHunter-v1.2.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
-
-
-rule tidehunter_conda:
-    input:
-       prime_3="data/seg/5_prime_bbcr.fa",
-       prime_5="data/seg/3_prime_bbcr.fa",
-       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
-    output:
-        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv",
-        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
+        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_full_length.fasta",
+        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide_full.done")
+    log:
+        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"
     threads: 4
     conda:
         "envs/tidehunter.yaml"
@@ -208,28 +213,45 @@ rule tidehunter_conda:
         mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
+        "TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
 
+rule tidehunter_conda:
+    input:
+       prime_3="data/seg/5_prime_bbcr.fa",
+       prime_5="data/seg/3_prime_bbcr.fa",
+       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
+    log:
+        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"    
+    threads: 4
+    conda:
+        "envs/tidehunter.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+        "TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
 rule trim_tide:
     # before BWA
     input:
-        tsv="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv"
+        fasta_full_length="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_full_length.fasta",
+        fasta_all="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus.fasta"
     output:
-        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
-#        pickle="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_tsv.pickle.gz"
-    conda:
-       "envs/bt.yaml"
+        fasta_all="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_trimmed.fasta",
+        fasta_full_length="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_full_length_trimmed.fasta",
+        metadata_all="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_all.txt"
     shell:
-        "python3 scripts/trim_tide_fasta_long_readname.py {input.tsv} {output.fasta}"
-
+        "sed -n -e 's/^>//p' {input.fasta_all} > {output.metadata_all};" # only export metadata from flexible parameter since it is the same if the pattern is found.
+        "sed 's/,.*//' {input.fasta_all} > {output.fasta_all};"
+        "sed 's/,.*//' {input.fasta_full_length} > {output.fasta_full_length};"
 rule cutadapt_tide:
     input:
-        tide="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_consensus_tide.fasta",
-        done="output/{SUP_SAMPLE}/04_done/aggregate_tide.done"
-
+        tide="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_full_length_trimmed.fasta",
     output:
-        cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cut_info.csv",
-        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta",
+        cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cutadapt_info.csv",
+        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_fl_cutadapt_tide.fasta",
         summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cutadapt_tide_summary.txt"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000,
@@ -240,10 +262,32 @@ rule cutadapt_tide:
 
 rule bwa_wrapper_tide:
     input:
-        reads="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_clean_bb_tide.fasta"
+        reads="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_fl_cutadapt_tide.fasta",
     output:
-        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam",
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.sorted.bam",
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide.done")
+    log:
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
+    params:
+        index=config["ref_genome_final"],
+        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
+        sort_extra="-l 9"            # Extra args for samtools/picard.
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 10000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    wrapper:
+        "0.50.0/bio/bwa/mem"
+
+
+rule bwa_wrapper_tide_full_length:
+    input:
+        reads=rules.trim_tide.output.fasta_full_length
+    output:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide_full_length_reads.done")
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
@@ -261,7 +305,7 @@ rule bwa_wrapper_tide:
 
 rule plot_samtools_stats:
     input:
-        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}-ins-clean-tide.sorted.bam", 
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.sorted.bam",
     output:
         stats = "output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}.stats",
         plot = directory("output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}_plot/"),
