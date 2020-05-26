@@ -279,7 +279,7 @@ rule bwa_wrapper_tide:
         mem_mb=lambda wildcards, attempt: attempt * 10000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
-        "0.50.0/bio/bwa/mem"
+        "0.58.0/bio/bwa/mem"
 
 
 rule bwa_wrapper_tide_full_length:
@@ -289,7 +289,7 @@ rule bwa_wrapper_tide_full_length:
         bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl.sorted.bam",
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide_full_length_reads.done")
     log:
-        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_full_length.log"
     params:
         index=config["ref_genome_final"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
@@ -301,25 +301,25 @@ rule bwa_wrapper_tide_full_length:
         mem_mb=lambda wildcards, attempt: attempt * 10000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
-        "0.50.0/bio/bwa/mem"
+        "0.58.0/bio/bwa/mem"
 
 rule plot_samtools_stats:
     input:
         bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.sorted.bam",
     output:
         stats = "output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}.stats",
-        plot = directory("output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}_plot/"),
         done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done"),
     params:
-        name = "{SUP_SAMPLE}_tide"
+        name = "{SUP_SAMPLE}_tide",
+        plot = "output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}_plot/"
     conda:
         "envs/bt.yaml"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000,
     shell:
         "samtools stats {input.bam} > {output.stats};"
-        "plot-bamstats -p {output.plot}{params.name} {output.stats};"
-        "cat {output.stats} | grep ^RL | cut -f 2- > {output.plot}{params.name}_RL.txt;"
+        "plot-bamstats -p {params.plot}{params.name} {output.stats};"
+        "cat {output.stats} | grep ^RL | cut -f 2- > {params.plot}{params.name}_RL.txt;"
 
 
 onsuccess:

@@ -1,4 +1,4 @@
-name: tidehunter
+name: th
 channels:
   - conda-forge
   - bioconda
@@ -6,25 +6,30 @@ channels:
 dependencies:
   - _libgcc_mutex=0.1
   - _openmp_mutex=4.5
-  - ca-certificates=2019.11.28
-  - certifi=2019.11.28
+  - binutils_impl_linux-64=2.34
+  - ca-certificates=2020.4.5.1
+  - certifi=2020.4.5.1
+  - gcc_impl_linux-64=7.5.0
+  - gfortran_impl_linux-64=7.5.0
+  - gxx_impl_linux-64=7.5.0
   - ld_impl_linux-64=2.34
-  - libffi=3.2
-  - libgcc-ng=9.2
-  - libgomp=9.2
-  - libstdcxx-ng=9.2
+  - libffi=3.2.1
+  - libgcc-ng=9.2.0
+  - libgfortran-ng=7.5.0
+  - libgomp=9.2.0
+  - libstdcxx-ng=9.2.0
   - ncurses=6.1
-  - openssl=1.1.1e
-  - pip=20.0
-  - python=3.8
-  - python_abi=3.8
+  - openssl=1.1.1g
+  - pip=20.1
+  - python=3.7.6
+  - python_abi=3.7
   - readline=8.0
-  - setuptools=46.1
-  - sqlite=3.30
-  - tidehunter=1.2
-  - tk=8.6
-  - wheel=0.34
-  - xz=5.2
-  - zlib=1.2
-prefix: /hpc/cog_bioinf/ridder/users/lchen/miniconda37_2/envs/tidehunter
+  - setuptools=46.4.0
+  - sqlite=3.30.1
+  - sysroot_linux-64=2.12
+  - tidehunter=1.4.1
+  - tk=8.6.10
+  - wheel=0.34.2
+  - xz=5.2.5
+  - zlib=1.2.11
 
