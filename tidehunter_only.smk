@@ -15,14 +15,15 @@ rule all:
 # bwa index for both tide and medaka
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index_tide.done", SUP_SAMPLE=SUP_SAMPLES),
 # samtool stats for tide
-#        expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done", SUP_SAMPLE=SUP_SAMPLES),
  #       expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_medaka.done", SUP_SAMPLE=SUP_SAMPLES),
 # align bb sequence for extracting barcode (can also use tide to extract barcode)
 #        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.sorted.bam", SUP_SAMPLE=SUP_SAMPLES),
 # per repeat bwa + sambamba result -- only for targeted
         #expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
-localrules: all, bwasw, bwa_mem, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_python, aggregate_tide, count_repeat, sambamba
-ruleorder: tidehunter_conda 
+localrules: all, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_tide 
+# ruleorder: tidehunter_conda  > tidehunter_sing 
+ruleorder: bwa_mem > bwa_wrapper_tide_full_length
 rule get_timestamp:
     input:
         fasta = expand("output/{SUP_SAMPLE}/00_fasta/{SAMPLE}.fasta", SAMPLE=SAMPLES, SUP_SAMPLE=SUP_SAMPLES)
@@ -72,15 +73,15 @@ rule fastq_get_fasta:
 
 rule aggregate_tide:
     input:
-        tide_all = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-        tide_fasta_full_length = expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_full_length.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
-        #tsv=expand("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.tsv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
+        tide_all = expand("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        tide_fasta_full_length = expand("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES),
+        #tsv=expand("output/{SUP_SAMPLE}/05_aggregate09_tide/{sample}_tide_consensus.tsv", SUP_SAMPLE=SUP_SAMPLES, sample=SAMPLES)
     output:
         tide_all = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus.fasta"),
         tide_full_length = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_full_length.fasta"),
         #done = touch("output/{SUP_SAMPLE}/04_done/aggregate_tide.done")
     params:
-        tide = "output/{SUP_SAMPLE}/05_aggregated/tide",
+        tide = "output/{SUP_SAMPLE}/09_tide",
     shell:
         "cat {params.tide}/*_tide_consensus.fasta > {output.tide_all};"
         "cat {params.tide}/*_tide_consensus_full_length.fasta > {output.tide_full_length};"
@@ -144,6 +145,12 @@ rule bwa_wrapper_bb:
     wrapper:
         "0.50.0/bio/bwa/mem"
 
+#rule samtools_index:
+#    input:        
+#    output:
+#    wrapper:
+#        "0.58.0/bio/samtools/index"
+
 rule bwa_index:
     input:
         tide_bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.sorted.bam",
@@ -156,35 +163,13 @@ rule bwa_index:
         "samtools index {input.tide_bam};"
         "samtools index {input.tide_bam_full_length}"
 
-rule bwa_mem:
-    input:
-#        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
-        done= "output/{SUP_SAMPLE}/04_done/{type}_split_fasta.done"
-    output:
-        sam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sam",
-        bam = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.bam",
-        sorted = "output/{SUP_SAMPLE}/05_aggregated/03_bwa_{type}/{count_name}.sorted.bam"
-    threads: 2
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 4)
-    conda:
-       "envs/bt.yaml"
-    params:
-        fasta = "output/{SUP_SAMPLE}/05_aggregated/02_split_{type, \s+[2-3]}/consensus_{type, \s+[2-3]}_{count_name, \d+}.fasta",
-        sorted = "output/{SUP_SAMPLE}/06_sorted",
-        ref_genome_fasta = config["ref_genome_final"],
-        name = "{SUP_SAMPLE}"
-    shell:
-        "bash scripts/bwa_mem.sh {params.fasta} {output.sam} {params.ref_genome_fasta} {params.name} {threads} {output.bam} {output.sorted}"
-
 #rule tidehunter_sing:
 #    input:
 #       prime_3="data/seg/5_prime_bbcr.fa",
 #       prime_5="data/seg/3_prime_bbcr.fa",
 #       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
 #    output:
-#        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+#        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta"),
 #        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
 #    threads: 4
 #    singularity:
@@ -202,7 +187,7 @@ rule tidehunter_conda_full_length:
        prime_5="data/seg/3_prime_bbcr.fa",
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
-        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus_full_length.fasta",
+        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide_full.done")
     log:
         stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"
@@ -221,7 +206,7 @@ rule tidehunter_conda:
        prime_5="data/seg/3_prime_bbcr.fa",
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
-        fasta="output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta",
+        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta"),
         done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     log:
         stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"    
@@ -234,8 +219,10 @@ rule tidehunter_conda:
     shell:
         "TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
 rule trim_tide:
+    # trim = cut too long read names into supplemental files
     # before BWA
     input:
+        # tidehunter_conda_full_length
         fasta_full_length="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_full_length.fasta",
         fasta_all="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus.fasta"
     output:
@@ -248,21 +235,23 @@ rule trim_tide:
         "sed 's/,.*//' {input.fasta_full_length} > {output.fasta_full_length};"
 rule cutadapt_tide:
     input:
+        # trim_tide output
         tide="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_full_length_trimmed.fasta",
     output:
         cut_info="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_tide_cutadapt_info.csv",
-        fasta="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_fl_cutadapt_tide.fasta",
+        fasta_fl_cutadapt="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_fl_cutadapt_tide.fasta",
         summary="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_cutadapt_tide_summary.txt"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 4000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     conda:"envs/bt.yaml"
     shell:
-        "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta} {input.tide} > {output.summary}"
+        "cutadapt -e 0.15 -b GGGCGGTATGTCATGCACACGAATCCCGAAGAnTGTTGTCCATTCATTGAATATGAGATCTCnATGGTATGATCAATATnCGGATGCGATATTGATAnCTGATAAATCATATATGCATAATCTCACATTATATTTATTATAATAAATCATCGTAGATATACACAATGTGAATTGTATACAATGGATAGTATAACTATCCAATTTCTTTGAGCATTGGCCTTGGTGTAGATTGCATGACATACCGCCC --action=lowercase --info-file {output.cut_info} -o {output.fasta_fl_cutadapt} {input.tide} > {output.summary}"
 
 rule bwa_wrapper_tide:
+    # without cutadapt
     input:
-        reads="output/{SUP_SAMPLE}/06_cut/{SUP_SAMPLE}_consensus_fl_cutadapt_tide.fasta",
+        reads="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_trimmed.fasta",
     output:
         bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.sorted.bam",
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide.done")
@@ -283,8 +272,9 @@ rule bwa_wrapper_tide:
 
 
 rule bwa_wrapper_tide_full_length:
+    #after cutadapt
     input:
-        reads=rules.trim_tide.output.fasta_full_length
+        reads=rules.cutadapt_tide.output.fasta_fl_cutadapt
     output:
         bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl.sorted.bam",
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide_full_length_reads.done")
@@ -303,15 +293,42 @@ rule bwa_wrapper_tide_full_length:
     wrapper:
         "0.58.0/bio/bwa/mem"
 
+rule bwa_mem:
+    input:
+        reads=rules.cutadapt_tide.output.fasta_fl_cutadapt
+    output:
+        sam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl.sam",
+        bam = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl.bam"),
+        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_mem_tide.done")
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 10000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    conda:
+       "envs/bt.yaml"
+    params:
+        ref_genome_fasta = config["ref_genome_final"],
+        name = "{SUP_SAMPLE}"
+    shell:
+        "bwa mem -t 8 -c 100 -M -R '@RG\\tID:{params.name}\\tSM:{params.name}\\tPL:NANOPORE\\tLB:{params.name}' {params.ref_genome_fasta} {input.reads} > {output.sam};"
+        "samtools view -h {output.sam} > {output.bam};"
+        "samtools sort -l 7  {output.bam} > {output.sorted};"
+     #   "samtools index {output.sorted};"
+
+
+
 rule plot_samtools_stats:
     input:
         bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide.sorted.bam",
     output:
-        stats = "output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}.stats",
+        stats = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}.stats",
+        SN = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_SN_tag_read_mapped.txt",
+        RL =  "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_RL_tag_read_length.txt",
         done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done"),
     params:
         name = "{SUP_SAMPLE}_tide",
-        plot = "output/{SUP_SAMPLE}/08_samtools_stats/tide/{SUP_SAMPLE}_plot/"
+        plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_plot/"
     conda:
         "envs/bt.yaml"
     resources:
@@ -319,7 +336,8 @@ rule plot_samtools_stats:
     shell:
         "samtools stats {input.bam} > {output.stats};"
         "plot-bamstats -p {params.plot}{params.name} {output.stats};"
-        "cat {output.stats} | grep ^RL | cut -f 2- > {params.plot}{params.name}_RL.txt;"
+        "cat {output.stats} | grep ^SN | cut -f 2- > {output.SN};"
+        "cat {output.stats} | grep ^RL | cut -f 2- > {output.RL};"
 
 
 onsuccess:
