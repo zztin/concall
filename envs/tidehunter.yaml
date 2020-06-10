@@ -27,7 +27,7 @@ dependencies:
   - setuptools=46.4.0
   - sqlite=3.30.1
   - sysroot_linux-64=2.12
-  - tidehunter=1.4.1
+  - tidehunter=1.4.2
   - tk=8.6.10
   - wheel=0.34.2
   - xz=5.2.5
