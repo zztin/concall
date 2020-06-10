@@ -198,7 +198,7 @@ rule tidehunter_conda_full_length:
         mem_mb=lambda wildcards, attempt: attempt * 2000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
+        "ulimit -c 0;TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
 
 rule tidehunter_conda:
     input:
@@ -217,7 +217,7 @@ rule tidehunter_conda:
         mem_mb=lambda wildcards, attempt: attempt * 2000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
+        "ulimit -c 0;TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
 rule trim_tide:
     # trim = cut too long read names into supplemental files
     # before BWA
