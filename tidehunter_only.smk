@@ -195,7 +195,7 @@ rule tidehunter_conda_full_length:
     conda:
         "envs/tidehunter.yaml"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
         "ulimit -c 0;TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
@@ -214,7 +214,7 @@ rule tidehunter_conda:
     conda:
         "envs/tidehunter.yaml"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
         "ulimit -c 0;TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
