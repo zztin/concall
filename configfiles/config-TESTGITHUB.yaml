@@ -1,0 +1,18 @@
+rawdir:
+    /home/runner/work/concall/concall/test/test_data/TEST40
+SUP_SAMPLES:
+    TEST40
+gz:
+    True
+genome:
+    /home/runner/work/concall/concall/data/test_ref/test_ref.fasta  
+ref_genome_final:
+    /home/runner/work/concall/concall/data/test_ref/test_ref.fasta  
+BBTYPE: 
+    /home/runner/work/concall/concall/data/seg/bb-G.fa
+min_insert_length:
+    0
+max_insert_length:
+    300000
+mail:
+    False
