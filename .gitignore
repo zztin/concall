@@ -9,7 +9,6 @@ configfiles
 reports
 # ignore gitignore
 .gitmodules
-.github/
 .travis.yml
 .gitlab-ci.yml
 .coveragerc
