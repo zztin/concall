@@ -14,6 +14,18 @@
 
 	pip install snakemake
 
+# Dependencies
+You need to provide an indexed reference genome to the snakemake pipeline in the configfiles. If you do not have a reference genome yet, you need to download them. For example, download hg19 human reference genome from here:
+hg19
+http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/ 
+using 
+```
+rsync -avzP rsync://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/analysisSet .
+gunzip hg19.p13.plusMT.no_alt_analysis_set.fa.gz
+bwa index -a bwtsw hg19.p13.plusMT.no_alt_analysis_set.fa
+```
+This could take up to 2 hours.
+
 # Usage
 `concall` can be run from command line after installation of snakemake.
 1. Locate where your fastq/fastq.gz files are. Fastq files up to 40000 reads (from 40, 4000, to 40000) were tested. If fastq is over this range, batch them with scripts/batch_fastq_gz.sh; scripts/batch_fastq.sh. If the fastq is too small, use scripts/concat_fastq_gz.py to combine them into bigger fastq.  ## Bowtie build will increase run time exponentially when input file is bigger. Therefore smaller batch of fastq files is preferred. To retain the number of files in a managable range, limit the input files < 700 files (tested - of 20000 reads - P260).  
