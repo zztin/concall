@@ -1,0 +1,30 @@
+name: New commit pushed or pull request created
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies (conda)
+        run: |
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -u -b -p $HOME/miniconda
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda config --set always_yes yes --set changeps1 no
+          conda update -q conda
+          conda env create -f=${GITHUB_WORKSPACE}/envs/tidehunter.yaml
+
+      - name: Run tests
+        run: |
+          bash ${GITHUB_WORKSPACE}/submit_local_tidehunter_only.sh TEST40
