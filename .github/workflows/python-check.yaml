@@ -16,6 +16,11 @@ jobs:
         with:
           python-version: 3.7
 
+      - name: Install dependencies (ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install gnuplot-qt -y
+
       - name: Install dependencies (conda)
         run: |
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -23,8 +28,26 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           conda config --set always_yes yes --set changeps1 no
           conda update -q conda
-          conda env create -f=${GITHUB_WORKSPACE}/envs/tidehunter.yaml
-
+          conda install -c conda-forge mamba
+          mamba create -c conda-forge -c bioconda -n snakemake snakemake
+          eval "$(${HOME}/miniconda/bin/conda shell.bash hook)"
+          conda activate snakemake
+          #source activate /home/runner/miniconda/envs/snakemake
+          snakemake --help
+          
       - name: Run tests
         run: |
-          bash ${GITHUB_WORKSPACE}/submit_local_tidehunter_only.sh TEST40
+          eval "$(${HOME}/miniconda/bin/conda shell.bash hook)"
+          conda activate snakemake
+          # debugging info
+          echo ${SHELL}
+          which conda
+          which python
+          python --version
+          # check if snakemake is now working
+          which snakemake
+          snakemake --version
+          echo ${GITHUB_WORKSPACE}
+
+          cd ${GITHUB_WORKSPACE}
+          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 1 --use-conda
