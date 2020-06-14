@@ -1,4 +1,4 @@
-name: New commit pushed or pull request created
+name: test-concall
 
 on: [push, pull_request]
 
