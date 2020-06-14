@@ -77,7 +77,9 @@ jobs:
           echo ${GITHUB_WORKSPACE}
 
           cd ${GITHUB_WORKSPACE}
-          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 1 --use-conda --delete-all-output
+          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 1 --use-conda
+          # clean up
+          rm -rf ${GITHUB_WORKSPACE}/output/
       - name: smk-tidehunter-2cores
         run: |
           # eval conda path tell which shell to use
@@ -94,4 +96,5 @@ jobs:
           snakemake --version
           echo ${GITHUB_WORKSPACE}
           cd ${GITHUB_WORKSPACE}
-          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 2 --use-conda --delete-all-output 
+          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 2 --use-conda
+          rm -rf ${GITHUB_WORKSPACE}/output/ 
