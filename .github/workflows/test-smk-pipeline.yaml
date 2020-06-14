@@ -4,36 +4,38 @@ on: [push, pull_request]
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.6","3.7"]
     steps:
       - name: Check out
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.7
-
       - name: Install dependencies (ubuntu)
         run: |
           sudo apt-get update
           sudo apt-get install gnuplot-qt -y
 
-      - name: Install dependencies (conda)
-        env:
-            PY_VERSION: 3.7.6
+      - name: Install conda
+        uses: goanpeca/setup-miniconda@v1
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Check conda version
+        shell: bash -l {0}
         run: |
-          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-          bash miniconda.sh -u -b -p $HOME/miniconda
-          export PATH="$HOME/miniconda/bin:$PATH"
-          conda config --set always_yes yes --set changeps1 no
-          conda update -q conda
+          conda info
+          conda list
+      - name: Install mamba and snakemake
+        run: |
           conda install -c conda-forge mamba
           echo "Creating python virtual environment by mamba..."
-          echo "mamba create -c conda-forge -c bioconda -n snakemake snakemake python=${PY_VERSION}"
-          mamba create -c conda-forge -c bioconda -n snakemake snakemake python=${PY_VERSION}
+          echo "mamba create -c conda-forge -c bioconda -n snakemake snakemake python=${{ matrix.python-version}}"
+          mamba create -c conda-forge -c bioconda -n snakemake snakemake python=${{ matrix.python-version}}
           echo "Snakemake environment created"
 
           # debugging info
@@ -43,14 +45,14 @@ jobs:
           which python
           python --version
           # tell conda which shell we are using so conda can work properly
-          eval "$(${HOME}/miniconda/bin/conda shell.bash hook)"
+          eval "$(/usr/share/miniconda/condabin/conda shell.bash hook)"
           conda activate snakemake
 
 
           # debugging info
           echo "After launcing conda with corresponding shell..."          
           echo "${SHELL}"
-          echo "PY_VERSION is: ${PY_VERSION}"
+          echo "PY_VERSION is: ${{ matrix.python-version}}"
           which conda
           which python
           python --version
@@ -58,10 +60,10 @@ jobs:
           which snakemake
           snakemake --version
 
-      - name: Run tests
+      - name: smk-tidehunter
         run: |
-          # tell conda which shell to use to work properly
-          eval "$(${HOME}/miniconda/bin/conda shell.bash hook)"
+          # eval tell conda which shell to use to work properly
+          eval "$(/usr/share/miniconda/bin/conda shell.bash hook)"
           conda activate snakemake
 
           # debugging info
@@ -75,4 +77,21 @@ jobs:
           echo ${GITHUB_WORKSPACE}
 
           cd ${GITHUB_WORKSPACE}
-          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 1 --use-conda
+          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 1 --use-conda --delete-all-output
+      - name: smk-tidehunter-2cores
+        run: |
+          # eval conda path tell which shell to use
+          eval "$(/usr/share/miniconda/bin/conda shell.bash hook)"
+          conda activate snakemake
+          # debugging info
+          echo ${SHELL}
+          echo "PY_VERSION is: ${{ matrix.python-version}}"
+          which conda
+          which python
+          python --version
+          # check if snakemake is working
+          which snakemake
+          snakemake --version
+          echo ${GITHUB_WORKSPACE}
+          cd ${GITHUB_WORKSPACE}
+          snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile tidehunter_only.smk --cores 2 --use-conda
