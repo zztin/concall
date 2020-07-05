@@ -7,12 +7,14 @@ output
 configfiles
 !configfiles/config-test*
 reports
-# ignore gitignore
+# ignore git
 .gitmodules
 .travis.yml
 .gitlab-ci.yml
 .coveragerc
 
+#ignore pycharm
+.idea/
 # ignore snakemake metadata
 .snakemake
 # test
