@@ -5,7 +5,7 @@ log
 data
 output
 configfiles
-!configfiles/config-test*
+!configfiles/config-TEST*
 reports
 # ignore git
 .gitmodules
