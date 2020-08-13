@@ -188,17 +188,16 @@ rule tidehunter_conda_full_length:
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
         fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
-        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide_full.done")
     log:
-        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"
+        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource_fl.txt"
     threads: 4
     conda:
         "envs/tidehunter.yaml"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        mem_mb=lambda wildcards, attempt: attempt * 8000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "ulimit -c 0;TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
+        "TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
 
 rule tidehunter_conda:
     input:
@@ -207,17 +206,16 @@ rule tidehunter_conda:
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
         fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta"),
-        done=touch("output/{SUP_SAMPLE}/04_done/{sample}_tide.done")
     log:
         stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"    
     threads: 4
     conda:
         "envs/tidehunter.yaml"
     resources:
-        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        mem_mb=lambda wildcards, attempt: attempt * 8000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "ulimit -c 0;TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
+        "TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
 rule trim_tide:
     # trim = cut too long read names into supplemental files
     # before BWA
