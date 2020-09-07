@@ -183,8 +183,8 @@ rule split_by_backbone:
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000,
         runtime=1
-    conda:
-        "envs/pysam-env.yaml"
+    #conda:
+    #    "envs/pysam-env.yaml"
     shell:
         #"python scripts/sam2.py {input.sam} {input.fastq} {output}"
         "python3 scripts/sam2.py {input.sam} {input.fasta} {output.bb} {output.ins} {output.stats} {params.min_insert_length} {params.max_insert_length}"
@@ -688,7 +688,7 @@ rule tidehunter_sing:
         mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "/TideHunter-v1.2.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
+        "/TideHunter-v1.4.2/bin/TideHunter -f 2 -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
 
 
 rule tidehunter_conda:
