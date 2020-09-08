@@ -17,32 +17,32 @@ def get_barcode(bb_bam, barcode_pos=[32, 62, 79, 97], barcode_name="BB25", barco
     if barcode_pos is None:
         barcode_pos = get_ref_barcode_positions(barcode_fa)
     ## Find random bases (barcodes) in backbones.
-    barcode = collections.defaultdict(dict)
+    barcode = collections.defaultdict(lambda: collections.defaultdict(str))
     # random positions, 0-based: [32, 62, 79, 97]
     start = barcode_pos[0]
     end = barcode_pos[-1]
     if os.path.isdir(bb_bam):
         for file in os.listdir(bb_bam):
             if file.endswith("sorted.bam"):
-                samfile = pysam.AlignmentFile(file, "rb")
-                print(file)
+                # file path + file name
+                samfile = pysam.AlignmentFile( bb_bam + file, "rb")
                 for pileupcolumn in samfile.pileup(barcode_name, start, end):
                     if (pileupcolumn.pos == 32) or (pileupcolumn.pos == 62) or (pileupcolumn.pos == 79) or (pileupcolumn.pos == 97):
                         for pileupread in pileupcolumn.pileups:
                             if not pileupread.is_del and not pileupread.is_refskip:
                                 read_name = (pileupread.alignment.query_name).split("_")[0]
-                                print(read_name)
                                 # query position is None if is_del or is_refskip is set.
-                                barcode[read_name][f"b{pileupcolumn.pos}"].append(pileupread.alignment.query_sequence[
-                                    pileupread.query_position])
+                                barcode[read_name][f"b{pileupcolumn.pos}"] += pileupread.alignment.query_sequence[
+                                    pileupread.query_position]
 
                                 # barcode[read_name][f"b{pileupcolumn.pos}_range7"] = pileupread.alignment.query_sequence[
                                 #                                                     pileupread.query_position - 3:pileupread.query_position + 3]
 
                 samfile.close()
+
     bb_combi = pd.DataFrame.from_dict(barcode).T
     bb_combi.fillna("X", inplace=True)
-    bb_combi['BB'] = bb_combi.apply(lambda row: row.loc["b32"]+row.loc["b62"]+row.loc["b79"]+row.loc["b97"], axis=1)
+#    bb_combi['BB'] = bb_combi.apply(lambda row: collections.Counter(row.loc["b32"]).most_common(1)[0]+row.loc["b62"]+row.loc["b79"]+row.loc["b97"], axis=1)
     return bb_combi
 
 
@@ -53,6 +53,8 @@ if __name__ == '__main__':
     parser.add_argument("--bb_type", help="Backbone type. This determines where the barcode is located",
                         type=str, default="BB25")
     args = parser.parse_args()
-    bb_combi = get_barcode(args.bb_bam, barcode_pos=[32, 62, 79, 97], barcode_name="BB25", barcode_fa=None)
+    # read name is the contig name. Use fasta to map to barcode again. Construct reference with only barcode
+    bb_combi = get_barcode(args.bb_bam, barcode_pos=[32, 62, 79, 97], barcode_name="BB24", barcode_fa=None)
     print(bb_combi.head())
-    pd.to_pickle(bb_combi, "../data/bb_combi.pickle")
+    pd.to_pickle(bb_combi, "../data/bb_combi_test40_4c.pickle")
+
