@@ -181,23 +181,23 @@ rule bwa_index:
 #        "/TideHunter-v1.2.2/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.fasta}"
 
 
-rule tidehunter_conda_full_length:
-    input:
-       prime_3=config["3_prime"],
-       prime_5=config["5_prime"],
-       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
-    output:
-        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
-    log:
-        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource_fl.txt"
-    threads: 4
-#    conda:
-#        "envs/th_new.yaml"
-    resources:
-        mem_mb=lambda wildcards, attempt: attempt * 8000,
-        runtime=lambda wildcards, attempt, input: ( attempt * 1)
-    shell:
-        "TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
+#rule tidehunter_conda_full_length:
+#    input:
+#       prime_3="data/seg/5_prime_bbcr.fa",
+#       prime_5="data/seg/3_prime_bbcr.fa",
+#       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+#    output:
+#        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
+#    log:
+#        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource_fl.txt"
+#    threads: 4
+##    conda:
+##        "envs/th_new.yaml"
+#    resources:
+#        mem_mb=lambda wildcards, attempt: attempt * 8000,
+#        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+#    shell:
+#        "TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
 
 #rule tidehunter_conda:
 #    input:
@@ -215,24 +215,44 @@ rule tidehunter_conda_full_length:
 #        mem_mb=lambda wildcards, attempt: attempt * 8000,
 #        runtime=lambda wildcards, attempt, input: ( attempt * 1)
 #    shell:
-#        "TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
+#       "TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
 
 
 rule tidehunter_sing:
     input:
-       prime_3="data/seg/5_prime_bbcr.fa",
-       prime_5="data/seg/3_prime_bbcr.fa",
+       #prime_3="data/seg/5_prime_bbcr.fa",
+       #prime_5="data/seg/3_prime_bbcr.fa",
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
-        fasta=temp("output/{SUP_SAMPLE}/05_aggregated/tide/{sample}_tide_consensus.fasta"),
+        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta"),
     threads: 4
+    log:
+        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"    
     singularity:
         "tidehunter.sif"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 20000,
         runtime=lambda wildcards, attempt, input: ( attempt * 1)
     shell:
-        "/TideHunter-v1.4.2/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.tsv}"
+        "/TideHunter-v1.4.2/bin/TideHunter -t {threads} {input.fasta} > {output.fasta} 2> {log.stdout}"
+
+rule tidehunter_sing_fl:
+    input:
+       prime_3=config["5_prime"],
+       prime_5=config["3_prime"],
+       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
+    threads: 4
+    singularity:
+        "tidehunter.sif"
+    log:
+        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource_fl.txt"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+        "/TideHunter-v1.4.2/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.70 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
 
 rule trim_tide:
     # trim = cut too long read names into supplemental files
