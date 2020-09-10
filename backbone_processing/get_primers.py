@@ -83,12 +83,12 @@ if __name__ == "__main__":
     parser.add_argument("--bb_type", help="backbone name (according to the backbones.fa file.", default=None)
     parser.add_argument("--bb_seq", help="backbone sequence. Only provide this when it is not listed in backbones.fa file", default=None)
     parser.add_argument("--bb_name", help="provide bb_name when bb_seq is provided. Will be used to write new primer files.", default=None)
-    parser.add_argument("--prime3", help="length of primer to produce", type=int)
+    parser.add_argument("--prime3", help="length of primer to produce", type=int, default=20)
     parser.add_argument("--prime3_skip", help="how many base pairs do you want to skip on 5 prime end (useful "
-                                             "when the 3' and 5' end has complement sequences", type=int)
-    parser.add_argument("--prime5", help="length of primer to produce,", type=int)
+                                             "when the 3' and 5' end has complement sequences", type=int, default=0)
+    parser.add_argument("--prime5", help="length of primer to produce,", type=int, default=20)
     parser.add_argument("--prime5_skip", help="how many base pairs do you want to skip on 5 prime end (useful "
-                                             "when the 3' and 5' end has complement sequences", type=int)
+                                             "when the 3' and 5' end has complement sequences", type=int, default=0)
     args = parser.parse_args()
     if args.bb_type:
         bb_seq = get_default_seq(args.bb_type)
