@@ -16,6 +16,7 @@ rule all:
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index_tide.done", SUP_SAMPLE=SUP_SAMPLES),
 # samtool stats for tide
         expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_mem_tide_no_bb.done", SUP_SAMPLE=SUP_SAMPLES)
  #       expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_medaka.done", SUP_SAMPLE=SUP_SAMPLES),
 # align bb sequence for extracting barcode (can also use tide to extract barcode)
 #        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.sorted.bam", SUP_SAMPLE=SUP_SAMPLES),
@@ -352,6 +353,28 @@ rule bwa_mem:
         "samtools sort -l 7  {output.bam} > {output.sorted};"
      #   "samtools index {output.sorted};"
 
+rule bwa_mem_ref_no_bb:
+    input:
+        reads=rules.cutadapt_tide.output.fasta_fl_cutadapt
+    output:
+        sam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl_no_bb.sam",
+        bam = temp("output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl_no_bb.bam"),
+        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl_no_bb.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_mem_tide_no_bb.done")
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 10000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    conda:
+       "envs/bt.yaml"
+    params:
+        ref_genome_fasta = config["genome"],
+        name = "{SUP_SAMPLE}"
+    shell:
+        "bwa mem -t 8 -c 100 -M -R '@RG\\tID:{params.name}\\tSM:{params.name}\\tPL:NANOPORE\\tLB:{params.name}' {params.ref_genome_fasta} {input.reads} > {output.sam};"
+        "samtools view -h {output.sam} > {output.bam};"
+        "samtools sort -l 7  {output.bam} > {output.sorted};"
+        "samtools index {output.sorted}"
 
 
 rule plot_samtools_stats:
