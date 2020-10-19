@@ -36,8 +36,13 @@ This could take up to 2 hours.
 		scripts/batch_fastq_gz.sh <input_dir> <output_dir> 
 		scripts/concat_fastq.py <input_dir> <output_dir: exact path> <batch-size> <prefix>
 
+2. Secondly, prepare the relevant files including 
+- reference genome
+- prepare backbone sequences flanking the target sequences (optional)
+`python ./backbone_processing/get_primers.py --help`
+- construct a configfiles. A configfile example can be found at ./configfiles/. Locate the configfile at ./configfiles/config-XXXX.yaml
 
-2. Second, decide where you want to run it (locally, or with qsub)
+3. Lastly, decide where you want to run it (locally, or with qsub)
 
 **run locally**
 
