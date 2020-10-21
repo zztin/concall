@@ -5,9 +5,9 @@ SUP_SAMPLES:
 gz:
     True
 genome:
-    data/test_ref/test_ref.fasta  
+    test/test_ref/test_ref.fasta  
 backbone_fa:
-    data/backbones/BB36.fa
+    data/backbones/BB25.fa
 min_insert_length:
     0
 max_insert_length:
