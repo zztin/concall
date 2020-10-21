@@ -126,11 +126,7 @@ rule bwa_wrapper_after_cutadapt:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-<<<<<<< HEAD
-        index=config["genome"],
-=======
         index=config['genome'],
->>>>>>> 7f55a28d4531b45cf983037dc8037ff7afde5a08
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -150,11 +146,7 @@ rule bwa_wrapper_bb:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-<<<<<<< HEAD
-        index=config["genome"],
-=======
         index=config['genome'],
->>>>>>> 7f55a28d4531b45cf983037dc8037ff7afde5a08
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -310,7 +302,6 @@ rule bwa_wrapper_tide:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-<<<<<<< HEAD
         index=config["genome"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
@@ -334,7 +325,7 @@ rule bwa_wrapper_tide_no_bb:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_no_bb.log"
     params:
-        index=config["genome"],
+        index=config['genome'],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -357,7 +348,7 @@ rule bwa_wrapper_bb_only:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_bb_only.log"
     params:
-        index=config["bb_only_ref"],
+        index=config['bb_only_ref'],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
