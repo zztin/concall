@@ -60,17 +60,21 @@ rule gz_fastq_get_fasta:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fastq = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"),
         fasta = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta")
+    conda:
+        "envs/bt.yaml"
     shell:
-        "zcat {input.gz} > {output.fastq};\
-         sed -n '1~4s/^@/>/p;2~4p' {output.fastq} > {output.fasta}"
+        "pyfastx fq2fa {input.fastq} > -o {output.fasta}"
 rule fastq_get_fasta:
     input:
         fastq  = ancient(config['rawdir']+"/{sample}.fastq")
     output:
         touch("output/{SUP_SAMPLE}/01_bowtie/{sample}/createfolder.done"),
         fasta = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta")
+    conda:
+        "envs/bt.yaml"
     shell:
-        "sed -n '1~4s/^@/>/p;2~4p' {input.fastq} > {output.fasta}"
+        "pyfastx fq2fa {input.fastq} > -o {output.fasta}"
+#        "sed -n '1~4s/^@/>/p;2~4p' {input.fastq} > {output.fasta}"
 
 
 rule aggregate_tide:
