@@ -298,19 +298,26 @@ rule bwa_wrapper_tide_no_bb:
     wrapper:
         "0.58.0/bio/bwa/mem"
 
-#rule generate_bb_only_ref:
-#    input:
-#        
-#    output:
-#    log:
-#    params:
-#    threads:
-#    resources:
-#    shell:
- 
+# preprocessing. Run only if backbone is new.
+rule generate_bb_only_ref:
+    input:
+        bb = config['backbone_fa']
+    output:
+        done = touch("output/{SUP_SAMPLE}/04_done/gen_bb_ref.done")
+    log:
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_bwa_gen_bb_ref.log" 
+    conda:
+        "envs/bt.yaml"
+    threads:4
+    resources:
+        mem_mb = lambda wildcards, attempt: attempt * 1000,
+        runtime = lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+        "bwa index {input.bb}" 
 
 rule bwa_wrapper_bb_only:
     input:
+        ref_built = "output/{SUP_SAMPLE}/04_done/gen_bb_ref.done",
         reads="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_trimmed.fasta",
     output:
         bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only.sorted.bam",
@@ -318,7 +325,7 @@ rule bwa_wrapper_bb_only:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_bb_only.log"
     params:
-        index=config['bb_only_ref'],
+        index=config['backbone_fa'],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.

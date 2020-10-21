@@ -6,10 +6,8 @@ gz:
     True
 genome:
     /home/runner/work/concall/concall/data/test_ref/test_ref.fasta  
-BBTYPE: 
-    /home/runner/work/concall/concall/data/seg/bb-G.fa
-bb_only_ref:
-    /home/runner/work/concall/concall/data/bb_only_ref/BB25_ref.fa
+backbone_fa:
+    /home/runner/work/concall/concall/data/backbones/BB36.fa
 min_insert_length:
     0
 max_insert_length:
