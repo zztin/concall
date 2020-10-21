@@ -6,13 +6,17 @@ gz:
     True
 genome:
     /home/runner/work/concall/concall/data/test_ref/test_ref.fasta  
-ref_genome_final:
-    /home/runner/work/concall/concall/data/test_ref/test_ref.fasta  
 BBTYPE: 
     /home/runner/work/concall/concall/data/seg/bb-G.fa
 min_insert_length:
     0
 max_insert_length:
     300000
+3_prime:
+     data/seg/3_prime_BB25.fa
+5_prime:
+     data/seg/5_prime_BB25.fa
 mail:
+    False
+sing:
     False

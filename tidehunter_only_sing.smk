@@ -28,7 +28,14 @@ rule all:
 # per repeat bwa + sambamba result -- only for targeted
         #expand("output/{SUP_SAMPLE}/04_done/{type}_sambamba.done", SUP_SAMPLE=SUP_SAMPLES, type = TYPES)
 localrules: all, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_tide 
-# ruleorder: tidehunter_conda  > tidehunter_sing 
+
+if config['sing'] == True:
+    ruleorder: tidehunter_sing > tidehunter_conda
+    ruleorder:  tidehunter_sing_fl > tidehunter_conda_full_length
+else:
+    ruleorder: tidehunter_conda > tidehunter_sing
+    ruleorder:  tidehunter_conda_full_length > tidehunter_sing_fl
+ 
 ruleorder: bwa_mem > bwa_wrapper_tide_full_length
 rule get_timestamp:
     input:
@@ -47,8 +54,8 @@ rule bedtool_getfasta:
 #    group: "bowtie_split"
     input:
         seg = "data/seg/{seg}.bed",
-        ref = "/hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta"
-	#ref = config["genome"]
+        #ref = "/hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta"
+	ref = config['genome']
     output:
 	"data/seg/{seg}.fa"
 #        expand("data/seg/{seg}.fa",seg = SEG)
@@ -119,7 +126,11 @@ rule bwa_wrapper_after_cutadapt:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
+<<<<<<< HEAD
         index=config["genome"],
+=======
+        index=config['genome'],
+>>>>>>> 7f55a28d4531b45cf983037dc8037ff7afde5a08
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -139,7 +150,11 @@ rule bwa_wrapper_bb:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
+<<<<<<< HEAD
         index=config["genome"],
+=======
+        index=config['genome'],
+>>>>>>> 7f55a28d4531b45cf983037dc8037ff7afde5a08
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -186,48 +201,43 @@ rule bwa_index:
 #    shell:
 #        "/TideHunter-v1.2.2/bin/TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} {input.fasta} > {output.fasta}"
 
+rule tidehunter_conda_full_length:
+    input:
+       prime_3=config['5_prime'],
+       prime_5=config['3_prime'],
+       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
+    log:
+        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource_fl.txt"
+    conda:
+        "envs/tidehunter.yaml"
+    threads: 4
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+        "TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.70 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
 
-#rule tidehunter_conda_full_length:
-#    input:
-#       prime_3="data/seg/5_prime_bbcr.fa",
-#       prime_5="data/seg/3_prime_bbcr.fa",
-#       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
-#    output:
-#        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
-#    log:
-#        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource_fl.txt"
-#    threads: 4
-##    conda:
-##        "envs/th_new.yaml"
-#    resources:
-#        mem_mb=lambda wildcards, attempt: attempt * 8000,
-#        runtime=lambda wildcards, attempt, input: ( attempt * 1)
-#    shell:
-#        "TideHunter -t {threads} -5 {input.prime_5} -3 {input.prime_3} -p 20 -a 0.60 -F {input.fasta} > {output.fasta} 2>{log.stdout}"
-
-#rule tidehunter_conda:
-#    input:
-#       prime_3="data/seg/5_prime_bbcr.fa",
-#       prime_5="data/seg/3_prime_bbcr.fa",
-#       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
-#    output:
-#        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta"),
-#    log:
-#        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"    
-#    threads: 4
-#    conda:
-#        "envs/th_new.yaml"
-#    resources:
-#        mem_mb=lambda wildcards, attempt: attempt * 8000,
-#        runtime=lambda wildcards, attempt, input: ( attempt * 1)
-#    shell:
-#       "TideHunter -t {threads} -p 20  {input.fasta} > {output.fasta} 2> {log.stdout}"
+rule tidehunter_conda:
+    input:
+       fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
+    output:
+        fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta"),
+    log:
+        stdout= "output/{SUP_SAMPLE}/04_done/{sample}_resource.txt"    
+    conda:
+        "envs/tidehunter.yaml"
+    threads: 4
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 20000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 1)
+    shell:
+       "TideHunter -t {threads}  {input.fasta} > {output.fasta} 2> {log.stdout}"
 
 
 rule tidehunter_sing:
     input:
-       #prime_3="data/seg/5_prime_bbcr.fa",
-       #prime_5="data/seg/3_prime_bbcr.fa",
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
         fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus.fasta"),
@@ -244,8 +254,8 @@ rule tidehunter_sing:
 
 rule tidehunter_sing_fl:
     input:
-       prime_3=config["5_prime"],
-       prime_5=config["3_prime"],
+       prime_3=config['5_prime'],
+       prime_5=config['3_prime'],
        fasta="output/{SUP_SAMPLE}/00_fasta/{sample}.fasta"
     output:
         fasta=temp("output/{SUP_SAMPLE}/09_tide/{sample}_tide_consensus_full_length.fasta"),
@@ -300,6 +310,7 @@ rule bwa_wrapper_tide:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
+<<<<<<< HEAD
         index=config["genome"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
@@ -369,7 +380,7 @@ rule bwa_wrapper_tide_full_length:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_full_length.log"
     params:
-        index=config["genome"],
+        index=config['genome'],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -396,7 +407,7 @@ rule bwa_mem:
     conda:
        "envs/bt.yaml"
     params:
-        ref_genome_fasta = config["genome"],
+        ref_genome_fasta = config['genome'],
         name = "{SUP_SAMPLE}"
     shell:
         "bwa mem -t 8 -c 100 -M -R '@RG\\tID:{params.name}\\tSM:{params.name}\\tPL:NANOPORE\\tLB:{params.name}' {params.ref_genome_fasta} {input.reads} > {output.sam};"
@@ -419,7 +430,7 @@ rule bwa_mem_ref_no_bb:
     conda:
        "envs/bt.yaml"
     params:
-        ref_genome_fasta = config["genome"],
+        ref_genome_fasta = config['genome'],
         name = "{SUP_SAMPLE}"
     shell:
         "bwa mem -t 8 -c 100 -M -R '@RG\\tID:{params.name}\\tSM:{params.name}\\tPL:NANOPORE\\tLB:{params.name}' {params.ref_genome_fasta} {input.reads} > {output.sam};"

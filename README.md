@@ -36,8 +36,13 @@ This could take up to 2 hours.
 		scripts/batch_fastq_gz.sh <input_dir> <output_dir> 
 		scripts/concat_fastq.py <input_dir> <output_dir: exact path> <batch-size> <prefix>
 
+2. Secondly, prepare the relevant files including 
+- reference genome
+- prepare backbone sequences flanking the target sequences (optional)
+`python ./backbone_processing/get_primers.py --help`
+- construct a configfiles. A configfile example can be found at ./configfiles/. Locate the configfile at ./configfiles/config-XXXX.yaml
 
-2. Second, decide where you want to run it (locally, or with qsub)
+3. Lastly, decide where you want to run it (locally, or with qsub)
 
 **run locally**
 
@@ -69,7 +74,7 @@ This could take up to 2 hours.
 Recipe of the container is in the file Singularity. Currently Singularity Hub uses v2.5 but this image is built and tested on v3.5 machine. It gives errors if image is built by singularity hub and pull down to hpc. (this needs to fix. Before then, please contact the author to get the correct image of Singularity container.)
 2. Tidehunter is installed via 
 	
-	conda -c bioconda tidehunter
+	conda install -c bioconda tidehunter
 	
 It runs normally on head node, compute node, but when submitted to hpc, fails occationally if running conda version. # need to check if it is resource issue? # need to check error message.
 
@@ -77,7 +82,7 @@ It runs normally on head node, compute node, but when submitted to hpc, fails oc
 
 
 
-Comtributions are welcome!"**
+Contributions are welcome!"**
 
 
  

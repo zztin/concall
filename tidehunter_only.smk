@@ -41,8 +41,8 @@ rule bedtool_getfasta:
 #    group: "bowtie_split"
     input:
         seg = "data/seg/{seg}.bed",
-        ref = "/hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta"
-	#ref = config["genome"]
+        #ref = "/hpc/cog_bioinf/GENOMES/Homo_sapiens.GRCh37.GATK.illumina/Homo_sapiens.GRCh37.GATK.illumina.fasta"
+	ref = config["genome"]
     output:
 	"data/seg/{seg}.fa"
 #        expand("data/seg/{seg}.fa",seg = SEG)
@@ -113,7 +113,7 @@ rule bwa_wrapper_after_cutadapt:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-        index=config["ref_genome_final"],
+        index=config["genome"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -133,7 +133,7 @@ rule bwa_wrapper_bb:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-        index=config["ref_genome_final"],
+        index=config["genome"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -274,7 +274,7 @@ rule bwa_wrapper_tide:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-        index=config["ref_genome_final"],
+        index=config["genome"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -297,7 +297,7 @@ rule bwa_wrapper_tide_full_length:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_full_length.log"
     params:
-        index=config["ref_genome_final"],
+        index=config["genome"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -324,7 +324,7 @@ rule bwa_mem:
     conda:
        "envs/bt.yaml"
     params:
-        ref_genome_fasta = config["ref_genome_final"],
+        ref_genome_fasta = config["genome"],
         name = "{SUP_SAMPLE}"
     shell:
         "bwa mem -t 8 -c 100 -M -R '@RG\\tID:{params.name}\\tSM:{params.name}\\tPL:NANOPORE\\tLB:{params.name}' {params.ref_genome_fasta} {input.reads} > {output.sam};"
