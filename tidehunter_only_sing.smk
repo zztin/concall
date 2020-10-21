@@ -25,7 +25,7 @@ rule all:
         expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb_not_fl.done", SUP_SAMPLE=SUP_SAMPLES),
 # map fasta file to bb only. (check which reads contain backbones)
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_bb_only.done", SUP_SAMPLE=SUP_SAMPLES),
-localrules: all, get_timestamp, bedtool_getfasta, gz_fastq_get_fasta, fastq_get_fasta, aggregate_tide 
+localrules: all, get_timestamp, gz_fastq_get_fasta, fastq_get_fasta, aggregate_tide 
 
 # check if use singularity image for Tidehunter or not. Please specify in configfiles.
 if config['sing'] == True:
