@@ -9,7 +9,7 @@ genome:
 BBTYPE: 
     /home/runner/work/concall/concall/data/seg/bb-G.fa
 bb_only_ref:
-    /home/runner/work/concall/data/bb_only_ref/BB25_ref.fa
+    /home/runner/work/concall/data/test_ref/test_ref.fa
 min_insert_length:
     0
 max_insert_length:
