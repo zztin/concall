@@ -7,8 +7,8 @@ if config['gz'] == True:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq.gz")
 else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
+print("sample dir:", config['rawdir'])
 print(f"There are {len(SAMPLES)} samples, {SAMPLES}.")
-
 # end products of this pipeline
 rule all:
     input:
@@ -41,15 +41,16 @@ ruleorder: bwa_mem > bwa_wrapper_tide_full_length
 rule get_timestamp:
     input:
         fasta = expand("output/{SUP_SAMPLE}/00_fasta/{SAMPLE}.fasta", SAMPLE=SAMPLES, SUP_SAMPLE=SUP_SAMPLES)
+        #fastq = ancient(config['rawdir']+"/{sample}.fastq.gz"),
     output:
         timestamp = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_timestamp.pickle"
     params:
-        fa = "output/{SUP_SAMPLE}/00_fasta/",
+        fq = config['rawdir'],
         name= "{SUP_SAMPLE}"
     conda:
         "envs/bt.yaml"
     shell:
-        "python scripts/get_timestamp.py -i {params.fa} -o {output.timestamp} -n {params.name} --datype 'fa' " 
+        "python scripts/get_timestamp.py -i {params.fq} -o {output.timestamp} -n {params.name} --datype 'fq' " 
 
 # convert fastq files to fasta files.
 rule gz_fastq_get_fasta:
@@ -57,12 +58,13 @@ rule gz_fastq_get_fasta:
     input:
         gz = ancient(config['rawdir']+"/{sample}.fastq.gz")
     output:
-        fastq = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fastq"),
         fasta = temp("output/{SUP_SAMPLE}/00_fasta/{sample}.fasta")
     conda:
         "envs/bt.yaml"
+#    log:
+#        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_{sample}_pyfastx_fastq_to_fasta.log"
     shell:
-        "pyfastx fq2fa {input.gz} -o {output.fasta}"
+        "pyfastx fq2fa {input.gz} -o {output.fasta} 2> {log}"
 
 rule fastq_get_fasta:
     input:
@@ -420,14 +422,14 @@ rule plot_samtools_stats_no_bb_fl:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb.done"),
     params:
         name = "{SUP_SAMPLE}_tide",
-        plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_plot_fl_no_bb/"
+        #plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_plot_fl_no_bb/"
     conda:
         "envs/bt.yaml"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000,
     shell:
         "samtools stats {input.bam} > {output.stats};"
-        "plot-bamstats -p {params.plot}{params.name} {output.stats};"
+        #"plot-bamstats -p {params.plot}{params.name} {output.stats};"
         "cat {output.stats} | grep ^SN | cut -f 2- > {output.SN};"
         "cat {output.stats} | grep ^RL | cut -f 2- > {output.RL};"
 
@@ -442,14 +444,14 @@ rule plot_samtools_stats_no_bb:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb_not_fl.done"),
     params:
         name = "{SUP_SAMPLE}_tide",
-        plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats_no_bb/{SUP_SAMPLE}_plot_no_bb/"
+        #plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats_no_bb/{SUP_SAMPLE}_plot_no_bb/"
     conda:
         "envs/bt.yaml"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000,
     shell:
         "samtools stats {input.bam} > {output.stats};"
-        "plot-bamstats -p {params.plot}{params.name} {output.stats};"
+        #"plot-bamstats -p {params.plot}{params.name} {output.stats};"
         "cat {output.stats} | grep ^SN | cut -f 2- > {output.SN};"
         "cat {output.stats} | grep ^RL | cut -f 2- > {output.RL};"
 
