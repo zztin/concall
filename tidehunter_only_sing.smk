@@ -64,7 +64,7 @@ rule gz_fastq_get_fasta:
 #    log:
 #        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_{sample}_pyfastx_fastq_to_fasta.log"
     shell:
-        "pyfastx fq2fa {input.gz} -o {output.fasta} 2> {log}"
+        "pyfastx fq2fa {input.gz} -o {output.fasta}"
 
 rule fastq_get_fasta:
     input:
