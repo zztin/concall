@@ -18,10 +18,11 @@ dic={}
 if opt.target_key and opt.target_value:
     dic[opt.target_key]=opt.target_value
 else:
-    dic={"exon12":"17:7577000-7577180","BB22":"BB22:1-248","BB24":"BB24:1-248","BB25":"BB25:1-248","BBCR":"BB22:1-248","TP53":"17:7565097-7590856","PJET":"PJET:1-2974","EGFR":"7:55081714-55329313"}
-
-sambamba="/hpc/local/CentOS7/cog/software/sambamba-0.6.5/sambamba"
-cosmic= "/hpc/cog_bioinf/ridder/tools/Cyclomics_consensus_pipeline/data_files/COSMIC_mutations.bed"
+#    dic={"exon12":"17:7577000-7577180","BB22":"BB22:1-248","BB24":"BB24:1-248","BB25":"BB25:1-248","BBCR":"BB22:1-248","TP53":"17:7565097-7590856","PJET":"PJET:1-2974","EGFR":"7:55081714-55329313"}
+    dic={"exon12":"17:7577000-7577180"}
+sambamba = "sambamba"
+#sambamba="/hpc/local/CentOS7/cog/software/sambamba-0.6.5/sambamba"
+#cosmic= "/hpc/cog_bioinf/ridder/tools/Cyclomics_consensus_pipeline/data_files/COSMIC_mutations.bed"
 if opt.output == None:
     opt.output= opt.input_dir
 for f in os.listdir(opt.input_dir):
@@ -38,7 +39,7 @@ for f in os.listdir(opt.input_dir):
             os.system(action)
 
 # Create folders
-move = True
+move = False
 if move ==True:
     os.system(f"mkdir -p {opt.output}/01_sam {opt.output}/02_bam {opt.output}/03_sorted {opt.output}/04_sambamba")
     os.system(f"mv {opt.output}/*.sorted.* {opt.output}/03_sorted")
