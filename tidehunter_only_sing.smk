@@ -337,7 +337,16 @@ rule bwa_wrapper_tide_no_bb:
     wrapper:
         "0.58.0/bio/bwa/mem"
 
-    
+#rule generate_bb_only_ref:
+#    input:
+#        
+#    output:
+#    log:
+#    params:
+#    threads:
+#    resources:
+#    shell:
+ 
 
 rule bwa_wrapper_bb_only:
     input:
