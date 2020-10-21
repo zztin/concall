@@ -1,7 +1,7 @@
 # concall
 
-![](https://github.com/zztin/concall/workflows/test-concall/badge.svg)
-
+![test-concall-on-mac](https://github.com/zztin/concall/workflows/test-concall-on-mac/badge.svg?branch=master)
+![test-concall-ubuntu-linux](https://github.com/zztin/concall/workflows/test-concall-ubuntu-linux/badge.svg)
 
 `concall` is a consensus calling pipeline based on open source deep learning based nanopore consensus sequences polishing "medaka", an experimental project developed and activately maintained by ONT Nanopore. We use the smolecule functionale to polish repeats of RCA product of short cfDNA fragments, aiming to provide high fidelity reads for clinical use. Accurate mutation calling is beneficial for early detection of cancer recurrence.
 
