@@ -466,14 +466,14 @@ rule plot_samtools_stats:
         done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done"),
     params:
         name = "{SUP_SAMPLE}_tide",
-        plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_plot/"
+        #plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_plot/"
     conda:
         "envs/bt.yaml"
     resources:
         mem_mb=lambda wildcards, attempt: attempt * 1000,
     shell:
         "samtools stats {input.bam} > {output.stats};"
-        "plot-bamstats -p {params.plot}{params.name} {output.stats};"
+        #"plot-bamstats -p {params.plot}{params.name} {output.stats};"
         "cat {output.stats} | grep ^SN | cut -f 2- > {output.SN};"
         "cat {output.stats} | grep ^RL | cut -f 2- > {output.RL};"
 
