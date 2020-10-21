@@ -1,4 +1,4 @@
-name: test-concall
+name: test-concall-ubuntu-linux
 
 on: [push, pull_request]
 
