@@ -346,7 +346,16 @@ rule bwa_wrapper_tide_no_bb:
     wrapper:
         "0.58.0/bio/bwa/mem"
 
-    
+#rule generate_bb_only_ref:
+#    input:
+#        
+#    output:
+#    log:
+#    params:
+#    threads:
+#    resources:
+#    shell:
+ 
 
 rule bwa_wrapper_bb_only:
     input:
@@ -357,7 +366,7 @@ rule bwa_wrapper_bb_only:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_bb_only.log"
     params:
-        index=config["bb_only_ref"],
+        index=config['bb_only_ref'],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
