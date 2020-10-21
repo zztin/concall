@@ -63,7 +63,8 @@ rule gz_fastq_get_fasta:
     conda:
         "envs/bt.yaml"
     shell:
-        "pyfastx fq2fa {input.fastq} > -o {output.fasta}"
+        "pyfastx fq2fa {input.gz} -o {output.fasta}"
+
 rule fastq_get_fasta:
     input:
         fastq  = ancient(config['rawdir']+"/{sample}.fastq")
@@ -73,7 +74,7 @@ rule fastq_get_fasta:
     conda:
         "envs/bt.yaml"
     shell:
-        "pyfastx fq2fa {input.fastq} > -o {output.fasta}"
+        "pyfastx fq2fa {input.fastq} -o {output.fasta}"
 #        "sed -n '1~4s/^@/>/p;2~4p' {input.fastq} > {output.fasta}"
 
 
