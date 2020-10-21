@@ -74,7 +74,7 @@ This could take up to 2 hours.
 Recipe of the container is in the file Singularity. Currently Singularity Hub uses v2.5 but this image is built and tested on v3.5 machine. It gives errors if image is built by singularity hub and pull down to hpc. (this needs to fix. Before then, please contact the author to get the correct image of Singularity container.)
 2. Tidehunter is installed via 
 	
-	conda -c bioconda tidehunter
+	conda install -c bioconda tidehunter
 	
 It runs normally on head node, compute node, but when submitted to hpc, fails occationally if running conda version. # need to check if it is resource issue? # need to check error message.
 
@@ -82,7 +82,7 @@ It runs normally on head node, compute node, but when submitted to hpc, fails oc
 
 
 
-Comtributions are welcome!"**
+Contributions are welcome!"**
 
 
  

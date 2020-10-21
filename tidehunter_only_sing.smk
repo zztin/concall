@@ -8,6 +8,8 @@ if config['gz'] == True:
 else:
     SAMPLES, = glob_wildcards(config['rawdir']+"/{sample}.fastq")
 print(f"There are {len(SAMPLES)} samples, {SAMPLES}.")
+
+
 rule all:
     input:
         # timestamp, tide results, medaka results, cutadapt_info, bb_barcode(to be implement), tagged_bam_files (to be implement), samtools stats
@@ -16,7 +18,10 @@ rule all:
         expand("output/{SUP_SAMPLE}/07_stats_done/bwa_index_tide.done", SUP_SAMPLE=SUP_SAMPLES),
 # samtool stats for tide
         expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats.done", SUP_SAMPLE=SUP_SAMPLES),
-        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_mem_tide_no_bb.done", SUP_SAMPLE=SUP_SAMPLES)
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_mem_tide_no_bb.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb_not_fl.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_bb_only.done", SUP_SAMPLE=SUP_SAMPLES),
  #       expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_medaka.done", SUP_SAMPLE=SUP_SAMPLES),
 # align bb sequence for extracting barcode (can also use tide to extract barcode)
 #        expand( "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb.sorted.bam", SUP_SAMPLE=SUP_SAMPLES),
@@ -121,7 +126,11 @@ rule bwa_wrapper_after_cutadapt:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
+<<<<<<< HEAD
+        index=config["genome"],
+=======
         index=config['genome'],
+>>>>>>> 7f55a28d4531b45cf983037dc8037ff7afde5a08
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -141,7 +150,11 @@ rule bwa_wrapper_bb:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
+<<<<<<< HEAD
+        index=config["genome"],
+=======
         index=config['genome'],
+>>>>>>> 7f55a28d4531b45cf983037dc8037ff7afde5a08
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -297,7 +310,54 @@ rule bwa_wrapper_tide:
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa.log"
     params:
-        index=config['genome'],
+<<<<<<< HEAD
+        index=config["genome"],
+        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
+        sort_extra="-l 9"            # Extra args for samtools/picard.
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 10000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    wrapper:
+        "0.58.0/bio/bwa/mem"
+
+
+
+rule bwa_wrapper_tide_no_bb:
+    input:
+        reads="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_trimmed.fasta",
+    output:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_no_bb.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_tide_no_bb.done")
+    log:
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_no_bb.log"
+    params:
+        index=config["genome"],
+        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
+        sort_extra="-l 9"            # Extra args for samtools/picard.
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 10000,
+        runtime=lambda wildcards, attempt, input: ( attempt * 4)
+    wrapper:
+        "0.58.0/bio/bwa/mem"
+
+    
+
+rule bwa_wrapper_bb_only:
+    input:
+        reads="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_trimmed.fasta",
+    output:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_bb_only.done")
+    log:
+        "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_bb_only.log"
+    params:
+        index=config["bb_only_ref"],
         extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
@@ -377,6 +437,50 @@ rule bwa_mem_ref_no_bb:
         "samtools view -h {output.sam} > {output.bam};"
         "samtools sort -l 7  {output.bam} > {output.sorted};"
         "samtools index {output.sorted}"
+
+
+rule plot_samtools_stats_no_bb_fl:
+    input:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_fl_no_bb.sorted.bam",
+    output:
+        stats = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_fl_no_bb.stats",
+        SN = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_SN_tag_read_mapped_fl_no_bb.txt",
+        RL =  "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_RL_tag_read_length_fl_no_bb.txt",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb.done"),
+    params:
+        name = "{SUP_SAMPLE}_tide",
+        plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_plot_fl_no_bb/"
+    conda:
+        "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+    shell:
+        "samtools stats {input.bam} > {output.stats};"
+        "plot-bamstats -p {params.plot}{params.name} {output.stats};"
+        "cat {output.stats} | grep ^SN | cut -f 2- > {output.SN};"
+        "cat {output.stats} | grep ^RL | cut -f 2- > {output.RL};"
+
+
+rule plot_samtools_stats_no_bb:
+    input:
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_no_bb.sorted.bam",
+    output:
+        stats = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_no_bb.stats",
+        SN = "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_SN_tag_read_mapped_no_bb.txt",
+        RL =  "output/{SUP_SAMPLE}/05_aggregated/tide_stats/{SUP_SAMPLE}_RL_tag_read_length_no_bb.txt",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb_not_fl.done"),
+    params:
+        name = "{SUP_SAMPLE}_tide",
+        plot = "output/{SUP_SAMPLE}/05_aggregated/tide_stats_no_bb/{SUP_SAMPLE}_plot_no_bb/"
+    conda:
+        "envs/bt.yaml"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+    shell:
+        "samtools stats {input.bam} > {output.stats};"
+        "plot-bamstats -p {params.plot}{params.name} {output.stats};"
+        "cat {output.stats} | grep ^SN | cut -f 2- > {output.SN};"
+        "cat {output.stats} | grep ^RL | cut -f 2- > {output.RL};"
 
 
 rule plot_samtools_stats:
