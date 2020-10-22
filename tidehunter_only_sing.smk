@@ -477,10 +477,10 @@ rule plot_samtools_stats:
         "cat {output.stats} | grep ^SN | cut -f 2- > {output.SN};"
         "cat {output.stats} | grep ^RL | cut -f 2- > {output.RL};"
 
-if config['mail'] == True:
+if config['mail']:
     onsuccess:
         print("Workflow finished, no error. Success!")
-        shell("mail -s 'Workflow finished, no error!' litingchen16@gmail.com < {log}")
+        shell(f"mail -s 'Workflow finished, no error!' {config['mail']} < {log}")
     onerror:
         print("An notice sent to Liting by mail.")
-        shell("mail -s 'an error occurred' litingchen16@gmail.com < {log}")
+        shell(f"mail -s 'an error occurred' {config['mail']} < {log}")

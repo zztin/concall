@@ -19,31 +19,39 @@ You need to provide an indexed reference genome to the snakemake pipeline in the
 hg19
 http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/ 
 using 
+
 ```
 rsync -avzP rsync://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/analysisSet .
 gunzip hg19.p13.plusMT.no_alt_analysis_set.fa.gz
 bwa index -a bwtsw hg19.p13.plusMT.no_alt_analysis_set.fa
 ```
 This could take up to 2 hours.
+
 2. Backbone files:
 A rolling circle amplification product usually contains inserts and backbones. Provide the backbone sequence as fasta at ./concall/data/backbones/. BWA index of the backbone will be created at the same folder for mapping the reads to backbone to check for their existance.
+
 3. Primer files:
 Primers files need to be generated from the backbone sequence using ./concall/backbone_processing/get_primers.py. Create 3' and 5' primer with a user defined length, with the option to skip the first few bases if the sequences are too ambiguous.
+
 4. Locate your fastq or fastq.gz files. Each batch can contain up to 40000 reads. If fastq is over this range, batch them with scripts/batch_fastq_gz.sh; scripts/batch_fastq.sh. If the fastq is too small, use scripts/concat_fastq_gz.py to combine them into bigger fastq.
-	scripts/batch_fastq_gz.sh <input_dir> <output_dir>
-	scripts/concat_fastq.py <input_dir> <output_dir: exact path> <batch-size> <prefix>
+```
+scripts/batch_fastq_gz.sh <input_dir> <output_dir>
+scripts/concat_fastq.py <input_dir> <output_dir: exact path> <batch-size> <prefix>
+```
 5. Create a configfile according to your data, and locate it at the ./concall/configfiles/ (example see ./concall/configfiles/config-TESTGITHUB.yaml) Update all parameters. Create a configfile named ./configfiles/config-XXXX.yaml. Elements in a configfile:
-	rawdir: the directory containing the fastq / fastq.gz files
-	SUP_SAMPLES: Prefix for output folder/files (sample name)
-	gz: if the fastq files is gzipped
-	genome: location of the reference genome fa file (make sure the genome has index files in the same folder)
-	backbone_fa: backbone sequence
-	min_insert_length: deprecated
-	max_insert_length:deprecated
-	3_prime: 3_prime_BBxxx.fa created by ./concall/backbone_processing/get_primers.py.
-	5_prime: 5_prime_BBxxx.fa created by ./concall/backbone_processing/get_primers.py.
-	mail: email address
-	sing: if using singularity image
+```
+rawdir: the directory containing the fastq / fastq.gz files
+SUP_SAMPLES: Prefix for output folder/files (sample name)
+gz: if the fastq files is gzipped
+genome: location of the reference genome fa file (make sure the genome has index files in the same folder)
+backbone_fa: backbone sequence
+min_insert_length: deprecated
+max_insert_length:deprecated
+3_prime: 3_prime_BBxxx.fa created by ./concall/backbone_processing/get_primers.py.
+5_prime: 5_prime_BBxxx.fa created by ./concall/backbone_processing/get_primers.py.
+mail: email address
+sing: if using singularity image
+```
 
 # Usage
 Once the preparation is done, concall can be run.
