@@ -56,14 +56,14 @@ sing: if using singularity image
 # Usage
 Once the preparation is done, concall can be run.
 
-## run locally
+-  run locally
 
 	cd concall/ # Where snakefile is located 
 	snakemake --configfile configfiles/config-XXXX.yaml --snakefile tidehunter_only_sing.smk --use-conda --cores 4
 	or
 	snakemake --configfile configfiles/config-XXXX.yaml--use-conda --use-singularity --snakefile tidehunter_only_sing.smk --cores 4 # at the moment singularity image is stored locally at .sif file which is not included in this repo. Please contact authors for further information. 
 	
-**run on hpc: slurm **
+- run on hpc: slurm
 	
 
 	snakemake --profile slurm --jobs 50 --latency-wait 240 --use-conda --use-singularity --rerun-incomplete --keep-going --restart-times 3 --configfile ./test/config/config-xxxx.yaml --snakefile tidehunter_only_sing.smk
@@ -74,7 +74,7 @@ Once the preparation is done, concall can be run.
 Recipe of the container is in the file Singularity. Currently Singularity Hub uses v2.5 but this image is built and tested on v3.5 machine. It gives errors if image is built by singularity hub and pull down to hpc. (this needs to fix. Before then, please contact the author to get the correct image of Singularity container.)
 
 
-#### Contributions are welcome!
+#### Contributions are welcome by raising issues or creating pull request. 
 
 
  
