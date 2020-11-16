@@ -101,7 +101,7 @@ jobs:
       - name: smk-medaka
         run: |
           # eval tell conda which shell to use to work properly
-          eval "$(/usr/local/miniconda/bin/conda shell.bash hook)"
+          eval "$(/usr/share/miniconda/bin/conda shell.bash hook)"
           conda activate snakemake
 
           # debugging info
@@ -118,14 +118,14 @@ jobs:
           snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile medaka.smk --cores 1 --use-conda
           # clean up
           rm -rf ${GITHUB_WORKSPACE}/output/
-      - name: smk-medaka-2cores
+      - name: smk-tidehunter-2cores
         run: |
-          # eval tell conda which shell to use to work properly
-          eval "$(/usr/local/miniconda/bin/conda shell.bash hook)"
+          # eval conda path tell which shell to use
+          eval "$(/usr/share/miniconda/bin/conda shell.bash hook)"
           conda activate snakemake
-
           # debugging info
           echo ${SHELL}
+          echo "PY_VERSION is: ${{ matrix.python-version}}"
           which conda
           which python
           python --version
@@ -133,9 +133,6 @@ jobs:
           which snakemake
           snakemake --version
           echo ${GITHUB_WORKSPACE}
-
           cd ${GITHUB_WORKSPACE}
           snakemake --configfile ./configfiles/config-TESTGITHUB.yaml --snakefile medaka.smk --cores 2 --use-conda
-          # clean up
-          rm -rf ${GITHUB_WORKSPACE}/output/
- 
+          rm -rf ${GITHUB_WORKSPACE}/output/ 
