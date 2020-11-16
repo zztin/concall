@@ -72,7 +72,7 @@ Once the preparation is done, concall can be run.
 # Development
 1. Tidehunter program can be run locally on a Singularity container (tidehunter.sif) is used as a local file at the moment.
 Recipe of the container is in the file Singularity. Currently Singularity Hub uses v2.5 but this image is built and tested on v3.5 machine. It gives errors if image is built by singularity hub and pull down to hpc. (this needs to fix. Before then, please contact the author to get the correct image of Singularity container.)
-
+2. Another workflow make use of ONT Medaka is built in pipeline medaka.smk. medaka has dependency of py=3.6. Environment: create a conda environment and install all package in envs/concall-meta.yaml. Workflow CI still building.
 
 #### Contributions are welcome by raising issues or creating pull request. 
 
