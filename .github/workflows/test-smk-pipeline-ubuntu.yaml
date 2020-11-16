@@ -21,7 +21,7 @@ jobs:
           sudo apt-get install gnuplot-qt -y
 
       - name: Install conda
-        uses: goanpeca/setup-miniconda@v1
+        uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
