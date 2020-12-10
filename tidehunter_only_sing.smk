@@ -278,7 +278,7 @@ rule bwa_wrapper_tide:
         mem_mb=lambda wildcards, attempt: attempt * 10000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
-        "0.58.0/bio/bwa/mem"
+        "0.68.0/bio/bwa/mem"
 
 
 
@@ -340,7 +340,7 @@ rule bwa_wrapper_bb_only:
         mem_mb=lambda wildcards, attempt: attempt * 10000,
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
-        "0.58.0/bio/bwa/mem"
+        "0.68.0/bio/bwa/mem"
 
 
 rule bwa_wrapper_tide_full_length:
