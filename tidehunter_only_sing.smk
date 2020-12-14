@@ -325,13 +325,13 @@ rule bwa_wrapper_bb_only:
         ref_built = "output/{SUP_SAMPLE}/04_done/gen_bb_ref.done",
         reads="output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_tide_consensus_trimmed.fasta",
     output:
-        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only.sorted.bam",
+        bam = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only_unfiltered.sorted.bam",
         done = touch("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_bb_only.done")
     log:
         "log/{SUP_SAMPLE}/{SUP_SAMPLE}_wrapper_bwa_bb_only.log"
     params:
         index=config['backbone_fa'],
-        extra=r"-F 4 -R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
+        extra=r"-R '@RG\tID:{SUP_SAMPLE}\tSM:{SUP_SAMPLE}'",
         sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
         sort_order="coordinate",  # Can be 'queryname' or 'coordinate'.
         sort_extra="-l 9"            # Extra args for samtools/picard.
@@ -341,6 +341,15 @@ rule bwa_wrapper_bb_only:
         runtime=lambda wildcards, attempt, input: ( attempt * 4)
     wrapper:
         "0.68.0/bio/bwa/mem"
+
+rule samtools_view_bb_only:
+    input:
+        sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only_unfiltered.sorted.bam"
+    output:
+        view = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only.sorted.bam"
+    shell:
+        "samtools view -b -F 4 {input.sorted} > {output.view}"
+
 
 
 rule bwa_wrapper_tide_full_length:
