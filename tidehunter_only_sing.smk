@@ -24,7 +24,7 @@ rule all:
 # stats mapped all consensus bam file
         expand("output/{SUP_SAMPLE}/07_stats_done/samtools_stats_no_bb_not_fl.done", SUP_SAMPLE=SUP_SAMPLES),
 # map fasta file to bb only. (check which reads contain backbones)
-        expand("output/{SUP_SAMPLE}/07_stats_done/bwa_wrapper_bb_only.done", SUP_SAMPLE=SUP_SAMPLES),
+        expand("output/{SUP_SAMPLE}/07_stats_done/filter_bb_only.done", SUP_SAMPLE=SUP_SAMPLES),
 localrules: all, get_timestamp, gz_fastq_get_fasta, fastq_get_fasta, aggregate_tide 
 
 # check if use singularity image for Tidehunter or not. Please specify in configfiles.
@@ -346,7 +346,10 @@ rule samtools_view_bb_only:
     input:
         sorted = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only_unfiltered.sorted.bam"
     output:
-        view = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only.sorted.bam"
+        view = "output/{SUP_SAMPLE}/05_aggregated/{SUP_SAMPLE}_bb_only.sorted.bam",
+        done = touch("output/{SUP_SAMPLE}/07_stats_done/filter_bb_only.done")
+    conda:
+        "envs/bt.yaml"
     shell:
         "samtools view -b -F 4 {input.sorted} > {output.view}"
 
